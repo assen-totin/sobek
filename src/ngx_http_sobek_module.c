@@ -1,0 +1,104 @@
+/**
+ * Nginx Sobek module
+ *
+ * @author: Assen Totin assen.totin@gmail.com
+ */
+
+#include "common.h"
+#include "ngx_http_sobek_module.h"
+#include "http.h"
+#include "utils.h"
+
+//// GLOBALS
+// NB: In Nginx, globals are per-thread
+globals_t *globals;
+
+/**
+ * Module initialisation
+ */
+ngx_int_t ngx_http_sobek_module_init (ngx_cycle_t *cycle) {
+	int ret;
+
+	// Init the globals
+	if ((globals = malloc(sizeof(globals_t))) == NULL) {
+		ngx_log_error(NGX_LOG_EMERG, cycle->log, 0, "Failed to allocate %l bytes for globals.", sizeof(globals_t));
+		return NGX_ERROR;
+	}
+
+	globals.init = FALSE;
+
+	return NGX_OK;
+}
+
+/**
+ * Module termination
+ */
+void ngx_http_sobek_module_end(ngx_cycle_t *cycle) {
+	if (globals.sign_key)
+		free(globals.sign_key);
+
+	free(globals);
+}
+
+/**
+ * Create location configuration
+ */
+void* ngx_http_sobek_create_loc_conf(ngx_conf_t* cf) {
+	ngx_http_sobek_loc_conf_t *loc_conf;
+
+	if ((loc_conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_sobek_loc_conf_t))) == NULL) {
+		ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "Failed to allocate %l bytes for location config.", sizeof(ngx_http_sobek_loc_conf_t));
+		return NGX_CONF_ERROR;
+	}
+
+	return loc_conf;
+}
+
+/**
+ * Merge location configuration
+ */
+char* ngx_http_sobek_merge_loc_conf(ngx_conf_t* cf, void* void_parent, void* void_child) {
+	ngx_http_sobek_loc_conf_t *parent = void_parent;
+	ngx_http_sobek_loc_conf_t *child = void_child;
+	int len;
+
+	ngx_conf_merge_str_value(child->sign_key, parent->sign_key, DEFAULT_SIGN_KEY);
+
+	return NGX_CONF_OK;
+}
+
+/**
+ * Init module and set handler
+ */
+char *ngx_http_sobek_init(ngx_conf_t *cf, ngx_command_t *cmd, void *conf) {
+	ngx_http_core_loc_conf_t  *clcf;
+
+	clcf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_core_module);
+	clcf->handler = ngx_http_sobek_handler;
+
+	return NGX_CONF_OK;
+}
+
+/**
+ * Content handler
+ */
+ngx_int_t ngx_http_sobek_handler(ngx_http_request_t *r) {
+	ngx_int_t ret;
+
+	// POST set callback and return
+	if (r->method & (NGX_HTTP_POST)) {
+		// Set body handler
+		if ((ret = ngx_http_read_client_request_body(r, sobek_handler_post)) >= NGX_HTTP_SPECIAL_RESPONSE)
+			return ret;
+
+		return NGX_DONE;
+	}
+
+	// GET, HEAD and DELETE
+	if (r->method & (NGX_HTTP_GET | NGX_HTTP_HEAD))
+		return sobek_handler_get(r);
+
+	ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "HTTP method not supported: %l", r->method);
+	return NGX_ERROR;
+} 
+
