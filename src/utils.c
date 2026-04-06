@@ -52,7 +52,6 @@ char *from_ngx_str(ngx_pool_t *pool, ngx_str_t ngx_str) {
 		return NULL;
 	}
 
-	bzero(ret, ngx_str.len + 1);
 	memcpy(ret, ngx_str.data, ngx_str.len);
 	return ret;
 }
@@ -102,6 +101,8 @@ void globals_init(ngx_http_request_t *r) {
 	sobek_loc_conf = ngx_http_get_module_loc_conf(r, ngx_http_sobek_module);
 
 	globals.sign_key = from_ngx_str_malloc(r->pool, sobek_loc_conf->sign_key);
+	globals.cookie_name = from_ngx_str_malloc(r->pool, sobek_loc_conf->cookie_name);
+	globals.cookie_ttl = sobek_loc_conf->cookie_ttl;
 	globals.init = TRUE;
 }
 

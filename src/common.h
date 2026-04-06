@@ -47,6 +47,8 @@
 #define CONTENT_TYPE_A_J "application/json"
 #define CONTENT_TYPE_A_XWFU "application/x-www-form-urlencoded"
 #define CONTENT_TYPE_T_P "text/plain"
+#define DEFAULT_COOKIE_NAME "sobek"
+#define DEFAULT_COOKIE_TTL 604800
 #define DEFAULT_SIGN_KEY "12345678901234567890123456789012"
 #define ERROR_MESSAGE_LENGTH 1024
 #define HASH_LENGTH 32
@@ -68,6 +70,8 @@ typedef struct {
 typedef struct {
 	bool init;
 	char *sign_key;
+	char *cookie_name;
+	time_t cookie_ttl;
 } globals_t;
 
 //// ENUMERATORS

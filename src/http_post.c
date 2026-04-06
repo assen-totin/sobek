@@ -194,8 +194,60 @@ void sobek_handler_post (ngx_http_request_t *r) {
 
 	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "Solution verified");
 
-	// FIXME Prepare cookie string
-	//username=John Doe; expires=Thu, 18 Dec 2013 12:00:00 UTC; path=/
+	// Prepare cookie
+	// Cookie consist of payload and signature, concatenated with the @ sign
+	// Payload is JSON (with current timestamp + offset as TTL), convreted to Base-16 for transmission
+	// Signature is also converted to Base-16 for transmission
+	/*
+	{
+		ttl:1234567890
+	}
+	*/
+	char *pld, *pld_b16, *sig, *sig_16, *cookie;
+	int sig_len, cookie_len;
+	time_t exp;
+	struct tm gmt;
+	if ((pld = ngx_pcalloc(r->pool, 17)) == NULL) {
+		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "POST failed to allocate %l bytes for payload.", 17);
+		return ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
+	}
+	exp = tv.tv_sec + globals.cookie_ttl;
+	sprintf(pld, "{ttl:%i}", exp);
+
+	if ((pld_b16 = ngx_pcalloc(r->pool, 2*17)) == NULL) {
+		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "POST failed to allocate %l bytes for payload in Base-16.", 2*17);
+		return ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
+	}
+	base16_encode(pld, strlen(pld), pld_b16);
+
+	// Sign cookie
+	// NB: we sign the payload (JSON) before it was encoded in Base-16
+	if ((sig = ngx_pcalloc(r->pool, SIGNATURE_LENGTH)) == NULL) {
+		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "Failed to allocate %l bytes for cookie signature", SIGNATURE_LENGTH);
+		return NGX_HTTP_INTERNAL_SERVER_ERROR;
+	}
+	ossl_alg = EVP_sha256();
+	HMAC(ossl_alg, globals->sign_key, strlen(globals->sign_key), (const unsigned char *)pld, strlen(pld), sig, &sig_len);
+
+	// Convert signature to Base-16
+	if ((sig_b16 = ngx_pcalloc(r->pool, 2 * SIGNATURE_LENGTH + 1)) == NULL) {
+		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "Failed to allocate %l bytes for cookie signature", SIGNATURE_LENGTH);
+		return NGX_HTTP_INTERNAL_SERVER_ERROR;
+	}
+	base16_encode(sig, SIGNATURE_LENGTH, sig_b16);
+	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "Cookie HMAC: %s", sig_b16);
+
+	// Prepare cookie string
+	//sobek=123@456...; expires=Thu, 18 Dec 2013 12:00:00 UTC; path=/
+	cookie_len = strlen(globals.cookie_name) + 1 + strlen(pld_b16) + 1 + strlen(sig_b16) + 47 + 1;
+	if ((cookie = ngx_pcalloc(r->pool, cookie_len)) == NULL) {
+		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "Failed to allocate %l bytes for cookie", cookie_len);
+		return NGX_HTTP_INTERNAL_SERVER_ERROR;
+	}
+	// Add expiration time from "exp"
+	gmtime_r(exp, &gmt);
+	sprintf(cookie, "%s=%s@%s", globals.cookie_name, pld_b16, sig_b16);
+	strftime(cookie + strlen(cookie), 47, "; expires=%a, %d %b %Y %H:%M:%S UTC; path=/", gmt);
 
 	// Prepare output chain
 	out = ngx_alloc_chain_link(r->pool);
@@ -215,8 +267,8 @@ void sobek_handler_post (ngx_http_request_t *r) {
 	out->next = NULL; 
 
 	// Set the buffer
-	buf->pos = (u_char *) json;
-	buf->last = (u_char *) json + json_len;
+	buf->pos = (u_char *) cookie;
+	buf->last = (u_char *) cookie + strlen(cookie);
 	buf->mmap = 1; 
 	buf->last_buf = 1; 
 

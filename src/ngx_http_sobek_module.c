@@ -36,6 +36,8 @@ ngx_int_t ngx_http_sobek_module_init (ngx_cycle_t *cycle) {
 void ngx_http_sobek_module_end(ngx_cycle_t *cycle) {
 	if (globals.sign_key)
 		free(globals.sign_key);
+	if (globals.cookie_name)
+		free(globals.cookie_name);
 
 	free(globals);
 }
@@ -63,6 +65,8 @@ char* ngx_http_sobek_merge_loc_conf(ngx_conf_t* cf, void* void_parent, void* voi
 	int len;
 
 	ngx_conf_merge_str_value(child->sign_key, parent->sign_key, DEFAULT_SIGN_KEY);
+	ngx_conf_merge_str_value(child->cookie_name, parent->cookie_name, DEFAULT_COOKIE_NAME);
+	ngx_conf_merge_uint_value(child->cookie_ttl, parent->cookie_ttl, DEFAULT_COOKIE_TTL);
 
 	return NGX_CONF_OK;
 }
@@ -94,7 +98,7 @@ ngx_int_t ngx_http_sobek_handler(ngx_http_request_t *r) {
 		return NGX_DONE;
 	}
 
-	// GET, HEAD and DELETE
+	// GET and HEAD
 	if (r->method & (NGX_HTTP_GET | NGX_HTTP_HEAD))
 		return sobek_handler_get(r);
 
