@@ -1,0 +1,63 @@
+<html>
+	<head>
+		<script>
+			async function sha256(challenge) {
+				var solution = 0;
+
+				// Starting time of the computation run
+				var start = Date.now();
+				console.log('Start time: ' + start);
+
+				var reprat = true;
+				while (true) {
+					solution ++; 
+
+					// Encode as UTF-8
+					const msgBuffer = new TextEncoder().encode(challenge + solution);
+
+					// Hash the message
+					// NB: returns a promise, so we need to process it
+					const arrayBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+					var hash = Array.from(new Uint8Array(arrayBuffer));
+					if ((hash[0] == 0) && (hash[1] == 0)) {
+						repeat = false;
+
+						var duration = Date.now() - start;
+						var hex = hash.map(b => b.toString(16).padStart(2, '0')).join('');
+						var log = 'Challenge: ' + challenge + '\n';
+						log += 'Duration: ' + duration/1000 + ' s\n';
+						log += 'Performance: ' + parseInt(1000 * solution / duration) + ' hashes/s\n';
+						log += 'Solution: ' + solution + '\n';
+						log += 'Hash: ' + hex;
+						console.log(log);
+
+						return solution;
+					}
+					else
+						// Run again with an incremented solution
+						solution ++;
+				}
+			}
+
+			var sobek = function() {
+				// FIXME: Get challenge
+var hUA = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0';
+var hXFF = '192.168.0.42';
+var serverId = 42;
+var ts = Date.now();
+var challenge = serverId + hUA + hXFF + ts;
+
+				var solution = sha256(challenge);
+				solution.then(function(result){
+					console.log("SOLUTION: " + result);
+
+					// FIXME: Submit solution
+				});
+			};
+		</script>
+	</head>
+	<body onLoad=javascript:sobek();>
+		<h3>Checking that you are not a bot...</h3>
+	</body>
+<html>
+

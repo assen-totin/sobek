@@ -36,19 +36,27 @@ cp -r ${RPM_SOURCE_DIR}/support-files/nginx/modules/* $RPM_BUILD_ROOT/usr/share/
 mkdir -p $RPM_BUILD_ROOT/usr/lib64/nginx/modules
 cp -r ${RPM_SOURCE_DIR}/lib/* $RPM_BUILD_ROOT/usr/lib64/nginx/modules
 
+mkdir -p $RPM_BUILD_ROOT/usr/share/sobek
+cp -r ${RPM_SOURCE_DIR}/www $RPM_BUILD_ROOT/usr/share/sobek
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %files
 
 %defattr(-, root, root)
-
+/usr/share/sobek
 /usr/share/nginx/modules/*
 /usr/lib64/nginx/modules/*
+/var/www/sobek
 
 %pre
 
 %post
+
+if [ $1 == 1] ; then
+	cp -r /usr/share/sobek/www/* /var/www/sobek
+fi
 
 systemctl restart nginx
 
