@@ -21,6 +21,7 @@
 #include <openssl/hmac.h>
 #include <openssl/pem.h>
 #include <openssl/rand.h>
+#include <openssl/sha.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -42,10 +43,12 @@
 //// DEFINITIONS
 
 #define CHALLENGE_LENGTH 64
+#define CHALLENGE_TTL 60
 #define CONTENT_TYPE_A_XWFU "application/x-www-form-urlencoded"
 #define CONTENT_TYPE_A_J "application/json"
 #define DEFAULT_SIGN_KEY "12345678901234567890123456789012"
 #define ERROR_MESSAGE_LENGTH 1024
+#define HASH_LENGTH 32
 #define SIGNATURE_LENGTH 32
 
 // STRUCTURES

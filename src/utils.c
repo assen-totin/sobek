@@ -154,3 +154,36 @@ char *trim_quotes(ngx_http_request_t *r, char *s) {
 	return ret;
 }
 
+/**
+ * Create signature
+ */
+ngx_int_t create_signature(ngx_http_request_t *r, time_t timestamp, char *challenge, char *signature) {
+	char *to_sign, *sig;
+	int sig_len;
+
+	// Prepare data to sign (does not have to be a NULL-terminated string, but this way we can log it)
+	if ((to_sign = ngx_pcalloc(r->pool, 2 * CHALLENGE_LENGTH + 12)) == NULL) {
+		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "Failed to allocate %l bytes for signing data.", 2 * CHALLENGE_LENGTH + 11);
+		return NGX_HTTP_INTERNAL_SERVER_ERROR;
+	}
+
+	memcpy(to_sign, challenge, 2 * CHALLENGE_LENGTH);
+	sprintf(to_sign + 2 * CHALLENGE_LENGTH, "@%i", timestamp);
+	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "Data to sign: %s", to_sign);
+
+	// Compute signature
+	if ((sig = ngx_pcalloc(r->pool, SIGNATURE_LENGTH)) == NULL) {
+		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "Failed to allocate %l bytes for signature", SIGNATURE_LENGTH);
+		return NGX_HTTP_INTERNAL_SERVER_ERROR;
+	}
+
+	ossl_alg = EVP_sha256();
+	HMAC(ossl_alg, globals->sign_key, strlen(globals->sign_key), (const unsigned char *)to_sign, strlen(to_sign), sig, &sig_len);
+
+	// Convert signature to Base-16
+	base16_encode(sig, SIGNATURE_LENGTH, signature);
+	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "HMAC: %s", sig_b16);
+
+	return 0;
+}
+
