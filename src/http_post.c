@@ -200,7 +200,7 @@ void sobek_handler_post (ngx_http_request_t *r) {
 	// Signature is also converted to Base-16 for transmission
 	/*
 	{
-		ttl:1234567890
+		exp:1234567890
 	}
 	*/
 	char *pld, *pld_b16, *sig, *sig_16, *cookie;
@@ -212,7 +212,7 @@ void sobek_handler_post (ngx_http_request_t *r) {
 		return ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
 	}
 	exp = tv.tv_sec + globals.cookie_ttl;
-	sprintf(pld, "{ttl:%i}", exp);
+	sprintf(pld, "{exp:%i}", exp);
 
 	if ((pld_b16 = ngx_pcalloc(r->pool, 2*17)) == NULL) {
 		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "POST failed to allocate %l bytes for payload in Base-16.", 2*17);
