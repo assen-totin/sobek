@@ -98,13 +98,13 @@ signature:"0123456789abcdef..."
 	out = ngx_alloc_chain_link(r->pool);
 	if (out == NULL) {
 		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "GET failed to allocate %l bytes for buffer chain.", sizeof(ngx_chain_t));
-		return upload_cleanup(r, upload, NGX_HTTP_INTERNAL_SERVER_ERROR);
+		return NGX_HTTP_INTERNAL_SERVER_ERROR;
 	}
 
 	// Prepare output buffer
 	if ((buf = ngx_pcalloc(r->pool, sizeof(ngx_buf_t))) == NULL) {
 		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "GET failed to allocate %l bytes for response buffer.", sizeof(ngx_buf_t));
-		return upload_cleanup(r, upload, NGX_HTTP_INTERNAL_SERVER_ERROR);
+		return NGX_HTTP_INTERNAL_SERVER_ERROR;
 	}
 
 	// Prepare output chain; hook the buffer

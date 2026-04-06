@@ -40,19 +40,45 @@
 			}
 
 			var sobek = function() {
-				// FIXME: Get challenge
-var hUA = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0';
-var hXFF = '192.168.0.42';
-var serverId = 42;
-var ts = Date.now();
-var challenge = serverId + hUA + hXFF + ts;
+				// Get URL from location
+				var locProto = document.location.protocol;
+				var locHostname = document.location.hostname;
+				var url = locProto + '//' + locHostname + '/sobek';
+				console.log('Sobek URL: ' + url);
 
-				var solution = sha256(challenge);
-				solution.then(function(result){
-					console.log("SOLUTION: " + result);
+				// Get challenge
+				var xhr = new XMLHttpRequest();
+				xhr.onreadystatechange = function() {
+					if ((this.readyState != 4) || (this.status != 200))
+						return console.log('Error getting challenge: ' + this.status);
 
-					// FIXME: Submit solution
-				});
+					console.log(xhr.responseText);
+					var data = JSON.parse(xhr.responseText);
+
+					var solution = sha256(data.challenge);
+					solution.then(function(result){
+						console.log("Solution: " + result);
+
+						// Submit solution together with the original challenge, timestamp and signature
+						var xhr2 = new XMLHttpRequest();
+						xhr2.onreadystatechange = function() {
+							if ((this.readyState != 4) || (this.status != 200))
+								return console.log('Error sending solution: ' + this.status);
+
+							// Set cookie as returned by the backend
+							document.cookie = xhr.responseText; 
+
+							// Return to original URL - refresh the page
+							window.location.reload(true);
+						};
+						xhr2.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+						xhr2.open("POST", url);
+						var params = 'timestamp=' + data.timestamp + '&challenge=' + data.challenge + '&signature=' + data.signature + '&solution=' + solution;
+						xhr2.send();
+					});
+				};
+				xhr.open("GET", url);
+				xhr.send();
 			};
 		</script>
 	</head>

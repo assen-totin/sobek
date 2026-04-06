@@ -186,13 +186,50 @@ void sobek_handler_post (ngx_http_request_t *r) {
 	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "POST hash: %s", hash_b16);
 
 	// Check if hash begins with two zeroes
-	if ((*hash == 0) && (*(hash + 1) == 0)) {
-		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "Solution verified");
-		return ngx_http_finalize_request(r, NGX_HTTP_OK);
+	if ((*hash != 0) || (*(hash + 1) != 0)) {
+		ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "Solution failed");
+		// FIXME: Return other code here?
+		return ngx_http_finalize_request(r, NGX_HTTP_BAD_REQUEST);
 	}
 
-	ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "Solution failed");
-	// FIXME: Return other code here?
-	return ngx_http_finalize_request(r, NGX_HTTP_BAD_REQUEST);
+	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "Solution verified");
+
+	// FIXME Prepare cookie string
+	//username=John Doe; expires=Thu, 18 Dec 2013 12:00:00 UTC; path=/
+
+	// Prepare output chain
+	out = ngx_alloc_chain_link(r->pool);
+	if (out == NULL) {
+		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "GET failed to allocate %l bytes for buffer chain.", sizeof(ngx_chain_t));
+		return ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
+	}
+
+	// Prepare output buffer
+	if ((buf = ngx_pcalloc(r->pool, sizeof(ngx_buf_t))) == NULL) {
+		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "GET failed to allocate %l bytes for response buffer.", sizeof(ngx_buf_t));
+		return ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
+	}
+
+	// Prepare output chain; hook the buffer
+	out->buf = buf;
+	out->next = NULL; 
+
+	// Set the buffer
+	buf->pos = (u_char *) json;
+	buf->last = (u_char *) json + json_len;
+	buf->mmap = 1; 
+	buf->last_buf = 1; 
+
+	// Status
+	r->headers_out.status = NGX_HTTP_OK;
+	r->headers_out.content_length_n = buf->last - buf->pos;
+
+	// Content-Type 
+	r->headers_out.content_type.len = strlen(CONTENT_TYPE_T_P);
+	r->headers_out.content_type.data = (u_char*) CONTENT_TYPE_T_P;
+
+	ret = ngx_http_send_header(r);
+	ret = ngx_http_output_filter(r, out);
+	ngx_http_finalize_request(r, ret);
 }
 
