@@ -5,5 +5,5 @@
  */
 
 //// GLOBALS
-extern globals_t *globals;
+extern globals_t globals;
 

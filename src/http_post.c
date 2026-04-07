@@ -11,7 +11,7 @@
 /**
  * POST and PUT request body processing callback
  */
-ngx_int_t sobek_handler_post (ngx_http_request_t *r) {
+void sobek_handler_post (ngx_http_request_t *r) {
 	int res;
 	int cookie_len;
 	unsigned int sig_len;
@@ -23,9 +23,9 @@ ngx_int_t sobek_handler_post (ngx_http_request_t *r) {
 	char *sig_b16;
 	char *rb, *form_field_name = NULL, *form_field_value = NULL;
 	char *ff_timestamp = NULL, *ff_challenge = NULL, *ff_signature = NULL, *ff_solution = NULL;
-	char *hash, *hash_b16;
+	char *hash_b16;
 	char *pld_b16, *cookie;
-	unsigned char *to_hash, *pld, *sig;
+	unsigned char *to_hash, *hash, *pld, *sig;
 
 	ngx_chain_t *out, *bufs;
 	ngx_int_t ret = NGX_OK;
@@ -229,7 +229,7 @@ ngx_int_t sobek_handler_post (ngx_http_request_t *r) {
 		return NGX_HTTP_INTERNAL_SERVER_ERROR;
 	}
 	ossl_alg = EVP_sha256();
-	HMAC(ossl_alg, globals->sign_key, strlen(globals->sign_key), (const unsigned char *)pld, strlen(pld), sig, &sig_len);
+	HMAC(ossl_alg, globals.sign_key, strlen(globals.sign_key), (const unsigned char *)pld, strlen(pld), sig, &sig_len);
 
 	// Convert signature to Base-16
 	if ((sig_b16 = ngx_pcalloc(r->pool, 2 * SIGNATURE_LENGTH + 1)) == NULL) {

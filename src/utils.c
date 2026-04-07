@@ -181,7 +181,7 @@ ngx_int_t create_signature(ngx_http_request_t *r, time_t timestamp, char *challe
 	}
 
 	ossl_alg = EVP_sha256();
-	HMAC(ossl_alg, globals->sign_key, strlen(globals->sign_key), (const unsigned char *)to_sign, strlen(to_sign), sig, &sig_len);
+	HMAC(ossl_alg, globals.sign_key, strlen(globals.sign_key), (const unsigned char *)to_sign, strlen(to_sign), sig, &sig_len);
 
 	// Convert signature to Base-16
 	base16_encode(sig, SIGNATURE_LENGTH, signature);
