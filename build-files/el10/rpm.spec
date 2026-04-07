@@ -39,6 +39,8 @@ cp -r ${RPM_SOURCE_DIR}/lib/* $RPM_BUILD_ROOT/usr/lib64/nginx/modules
 mkdir -p $RPM_BUILD_ROOT/usr/share/sobek
 cp -r ${RPM_SOURCE_DIR}/www $RPM_BUILD_ROOT/usr/share/sobek
 
+mkdir -p $RPM_BUILD_ROOT/var/www/sobek
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 
