@@ -18,7 +18,7 @@ ngx_int_t sobek_handler_get(ngx_http_request_t *r) {
 	int res;
 	unsigned int json_len;
 	unsigned char *random;
-	char *challenge, *json, *sig_b16;
+	char *challenge = NULL, *json, *sig_b16;
 	ngx_buf_t *buf = NULL;
 	ngx_chain_t *out;
 	ngx_int_t ret = NGX_OK;

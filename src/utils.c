@@ -159,8 +159,10 @@ char *trim_quotes(ngx_http_request_t *r, char *s) {
  * Create signature
  */
 ngx_int_t create_signature(ngx_http_request_t *r, time_t timestamp, char *challenge, char *signature) {
-	char *to_sign, *sig;
-	int sig_len;
+	char *to_sign; 
+	unsigned char *sig;
+	unsigned int sig_len;
+	const EVP_MD *ossl_alg;
 
 	// Prepare data to sign (does not have to be a NULL-terminated string, but this way we can log it)
 	if ((to_sign = ngx_pcalloc(r->pool, 2 * CHALLENGE_LENGTH + 12)) == NULL) {

@@ -5,27 +5,35 @@
  */
 
 #include "common.h"
+#include "globals.h"
 #include "utils.h"
 
 /**
  * POST and PUT request body processing callback
  */
-void sobek_handler_post (ngx_http_request_t *r) {
-	off_t len = 0, len_buf;
-	ngx_buf_t *b = NULL;
-	ngx_chain_t *out, *bufs;
-	ngx_int_t ret = NGX_OK;
-	char *content_length_z, *content_type, *boundary, *line, *part = NULL;
-	char *file_data_begin = NULL, *file_content_transfer_encoding = NULL;
-	char *part_pos = NULL,  *part_filename = NULL, *part_content_type = NULL, *part_content_transfer_encoding = NULL, *part_end;
-	int file_fd, cnt_part = 0, cnt_header, mode, eagain_count = 0;
+ngx_int_t sobek_handler_post (ngx_http_request_t *r) {
+	int res;
+	int cookie_len;
+	unsigned int sig_len;
 	long content_length, rb_pos = 0;
-	uint64_t hash[2];
-	int64_t written_last, written_total = 0;
+	time_t exp;
+	off_t len = 0, len_buf;
 
+	char *content_length_z, *content_type, *part = NULL, *part_pos = NULL,  *part_end;
+	char *sig_b16;
 	char *rb, *form_field_name = NULL, *form_field_value = NULL;
 	char *ff_timestamp = NULL, *ff_challenge = NULL, *ff_signature = NULL, *ff_solution = NULL;
+	char *hash, *hash_b16;
+	char *pld_b16, *cookie;
+	unsigned char *to_hash, *pld, *sig;
+
+	ngx_chain_t *out, *bufs;
+	ngx_int_t ret = NGX_OK;
+	ngx_buf_t *buf = NULL;
+
 	struct timeval tv;
+	struct tm gmt;
+	const EVP_MD *ossl_alg;
 
 	// Init globals if this is the first request on current thread
 	globals_init(r);
@@ -79,9 +87,8 @@ void sobek_handler_post (ngx_http_request_t *r) {
 	// Process application/x-www-form-urlencoded
 	// Traverse the request body
 	part = rb;
-	while(part) {
+	while (part) {
 		// Find next =
-		char *part_end;
 		if ((part_pos = memchr(part, '=', rb - part + content_length)) == NULL) {
 			ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "POST request A/XWFU: could not find next key-value delimiter");
 			return ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
@@ -161,7 +168,6 @@ void sobek_handler_post (ngx_http_request_t *r) {
 	}
 
 	// Verify solution
-	char *to_hash, *hash, *hash_b16;
 	if ((to_hash = ngx_pcalloc(r->pool, strlen(ff_challenge) + strlen(ff_solution))) == NULL) {
 		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "POST failed to allocate %l bytes for solution verification.", strlen(ff_challenge) + strlen(ff_solution));
 		return ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
@@ -203,10 +209,6 @@ void sobek_handler_post (ngx_http_request_t *r) {
 		exp:1234567890
 	}
 	*/
-	char *pld, *pld_b16, *sig, *sig_16, *cookie;
-	int sig_len, cookie_len;
-	time_t exp;
-	struct tm gmt;
 	if ((pld = ngx_pcalloc(r->pool, 17)) == NULL) {
 		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "POST failed to allocate %l bytes for payload.", 17);
 		return ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
@@ -245,9 +247,9 @@ void sobek_handler_post (ngx_http_request_t *r) {
 		return NGX_HTTP_INTERNAL_SERVER_ERROR;
 	}
 	// Add expiration time from "exp"
-	gmtime_r(exp, &gmt);
+	gmtime_r(&exp, &gmt);
 	sprintf(cookie, "%s=%s@%s", globals.cookie_name, pld_b16, sig_b16);
-	strftime(cookie + strlen(cookie), 47, "; expires=%a, %d %b %Y %H:%M:%S UTC; path=/", gmt);
+	strftime(cookie + strlen(cookie), 47, "; expires=%a, %d %b %Y %H:%M:%S UTC; path=/", &gmt);
 
 	// Prepare output chain
 	out = ngx_alloc_chain_link(r->pool);
