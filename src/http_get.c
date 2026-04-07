@@ -17,8 +17,8 @@ ngx_int_t sobek_handler_get(ngx_http_request_t *r) {
 	struct timeval tv;
 	int res;
 	unsigned int json_len;
-	unsigned char *random, *sig_b16;
-	char *challenge, *json;
+	unsigned char *random;
+	char *challenge, *json, *sig_b16;
 	ngx_buf_t *buf = NULL;
 	ngx_chain_t *out;
 	ngx_int_t ret = NGX_OK;
@@ -84,9 +84,9 @@ signature:"0123456789abcdef..."
 	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "GET JSON length: %l", json_len);
 
 	strcpy(json, "{timestamp:");
-	sprintf(json + strlen(json), "%l", tv.tv_sec);
+	sprintf(json + strlen(json), "%li", tv.tv_sec);
 	strcpy(json + strlen(json), ",challenge:\"");
-	memcpy(json + strlen(json), challenge, 2 * CHALLENGE_LENGTH)
+	memcpy(json + strlen(json), challenge, 2 * CHALLENGE_LENGTH);
 	strcpy(json + strlen(json), "\",signature:\"");
 	memcpy(json + strlen(json), sig_b16, 2 * SIGNATURE_LENGTH);
 	strcpy(json + strlen(json), "\"}");

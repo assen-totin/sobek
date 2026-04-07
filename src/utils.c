@@ -78,7 +78,7 @@ char *from_ngx_str_malloc(ngx_pool_t *pool, ngx_str_t ngx_str) {
 /**
  * Encode a string to base16 string
  */
-void base16_encode(unsigned char *in, int len, unsigned char *out) {
+void base16_encode(unsigned char *in, int len, char *out) {
 	size_t  i;
 
 	for (i=0; i < len; i++) {

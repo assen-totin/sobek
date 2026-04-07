@@ -212,7 +212,7 @@ void sobek_handler_post (ngx_http_request_t *r) {
 		return ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
 	}
 	exp = tv.tv_sec + globals.cookie_ttl;
-	sprintf(pld, "{exp:%l}", exp);
+	sprintf(pld, "{exp:%li}", exp);
 
 	if ((pld_b16 = ngx_pcalloc(r->pool, 2*17)) == NULL) {
 		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "POST failed to allocate %l bytes for payload in Base-16.", 2*17);
