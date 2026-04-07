@@ -24,7 +24,7 @@ void sobek_handler_post (ngx_http_request_t *r) {
 	char *rb, *form_field_name = NULL, *form_field_value = NULL;
 	char *ff_timestamp = NULL, *ff_challenge = NULL, *ff_signature = NULL, *ff_solution = NULL;
 	char *hash_b16;
-	char pld, *pld_b16, *cookie;
+	char *pld, *pld_b16, *cookie;
 	unsigned char *to_hash, *hash, *sig;
 
 	ngx_chain_t *out, *bufs;
