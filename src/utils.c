@@ -103,7 +103,7 @@ void globals_init(ngx_http_request_t *r) {
 	globals.sign_key = from_ngx_str_malloc(r->pool, sobek_loc_conf->sign_key);
 	globals.cookie_name = from_ngx_str_malloc(r->pool, sobek_loc_conf->cookie_name);
 	globals.cookie_ttl = sobek_loc_conf->cookie_ttl;
-	globals.init = TRUE;
+	globals.init = true;
 }
 
 /**

@@ -17,15 +17,13 @@ globals_t *globals;
  * Module initialisation
  */
 ngx_int_t ngx_http_sobek_module_init (ngx_cycle_t *cycle) {
-	int ret;
-
 	// Init the globals
 	if ((globals = malloc(sizeof(globals_t))) == NULL) {
 		ngx_log_error(NGX_LOG_EMERG, cycle->log, 0, "Failed to allocate %l bytes for globals->", sizeof(globals_t));
 		return NGX_ERROR;
 	}
 
-	globals->init = FALSE;
+	globals->init = false;
 
 	return NGX_OK;
 }
@@ -62,7 +60,6 @@ void* ngx_http_sobek_create_loc_conf(ngx_conf_t* cf) {
 char* ngx_http_sobek_merge_loc_conf(ngx_conf_t* cf, void* void_parent, void* void_child) {
 	ngx_http_sobek_loc_conf_t *parent = void_parent;
 	ngx_http_sobek_loc_conf_t *child = void_child;
-	int len;
 
 	ngx_conf_merge_str_value(child->sign_key, parent->sign_key, DEFAULT_SIGN_KEY);
 	ngx_conf_merge_str_value(child->cookie_name, parent->cookie_name, DEFAULT_COOKIE_NAME);
