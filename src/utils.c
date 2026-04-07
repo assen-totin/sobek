@@ -171,7 +171,7 @@ ngx_int_t create_signature(ngx_http_request_t *r, time_t timestamp, char *challe
 	}
 
 	memcpy(to_sign, challenge, 2 * CHALLENGE_LENGTH);
-	sprintf(to_sign + 2 * CHALLENGE_LENGTH, "@%i", timestamp);
+	sprintf(to_sign + 2 * CHALLENGE_LENGTH, "@%li", timestamp);
 	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "Data to sign: %s", to_sign);
 
 	// Compute signature
