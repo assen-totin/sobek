@@ -24,8 +24,8 @@ void sobek_handler_post (ngx_http_request_t *r) {
 	char *rb, *form_field_name = NULL, *form_field_value = NULL;
 	char *ff_timestamp = NULL, *ff_challenge = NULL, *ff_signature = NULL, *ff_solution = NULL;
 	char *hash_b16;
-	char *pld_b16, *cookie;
-	unsigned char *to_hash, *hash, *pld, *sig;
+	char pld, *pld_b16, *cookie;
+	unsigned char *to_hash, *hash, *sig;
 
 	ngx_chain_t *out, *bufs;
 	ngx_int_t ret = NGX_OK;
@@ -220,13 +220,13 @@ void sobek_handler_post (ngx_http_request_t *r) {
 		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "POST failed to allocate %l bytes for payload in Base-16.", 2*17);
 		return ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
 	}
-	base16_encode(pld, strlen(pld), pld_b16);
+	base16_encode((const unsigned char *) pld, strlen(pld), pld_b16);
 
 	// Sign cookie
 	// NB: we sign the payload (JSON) before it was encoded in Base-16
 	if ((sig = ngx_pcalloc(r->pool, SIGNATURE_LENGTH)) == NULL) {
 		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "Failed to allocate %l bytes for cookie signature", SIGNATURE_LENGTH);
-		return NGX_HTTP_INTERNAL_SERVER_ERROR;
+		return ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
 	}
 	ossl_alg = EVP_sha256();
 	HMAC(ossl_alg, globals.sign_key, strlen(globals.sign_key), (const unsigned char *)pld, strlen(pld), sig, &sig_len);
@@ -234,7 +234,7 @@ void sobek_handler_post (ngx_http_request_t *r) {
 	// Convert signature to Base-16
 	if ((sig_b16 = ngx_pcalloc(r->pool, 2 * SIGNATURE_LENGTH + 1)) == NULL) {
 		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "Failed to allocate %l bytes for cookie signature", SIGNATURE_LENGTH);
-		return NGX_HTTP_INTERNAL_SERVER_ERROR;
+		return ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
 	}
 	base16_encode(sig, SIGNATURE_LENGTH, sig_b16);
 	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "Cookie HMAC: %s", sig_b16);
@@ -244,7 +244,7 @@ void sobek_handler_post (ngx_http_request_t *r) {
 	cookie_len = strlen(globals.cookie_name) + 1 + strlen(pld_b16) + 1 + strlen(sig_b16) + 47 + 1;
 	if ((cookie = ngx_pcalloc(r->pool, cookie_len)) == NULL) {
 		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "Failed to allocate %l bytes for cookie", cookie_len);
-		return NGX_HTTP_INTERNAL_SERVER_ERROR;
+		return ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
 	}
 	// Add expiration time from "exp"
 	gmtime_r(&exp, &gmt);
