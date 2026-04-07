@@ -66,7 +66,7 @@ char *from_ngx_str_malloc(ngx_pool_t *pool, ngx_str_t ngx_str) {
 	if (! ngx_str.len)
 		return NULL;
 
-	if ((ret = calloc(ngx_str.len + 1), 1) == NULL) {
+	if ((ret = calloc(ngx_str.len + 1, 1)) == NULL) {
 		ngx_log_error(NGX_LOG_EMERG, pool->log, 0, "Failed to allocate %l bytes in from_ngx_str().", ngx_str.len + 1);
 		return NULL;
 	}
@@ -94,16 +94,16 @@ void base16_encode(unsigned char *in, int len, char *out) {
 void globals_init(ngx_http_request_t *r) {
 	ngx_http_sobek_loc_conf_t *sobek_loc_conf;
 
-	if (globals.init)
+	if (globals->init)
 		return;
 
 	// Get config
 	sobek_loc_conf = ngx_http_get_module_loc_conf(r, ngx_http_sobek_module);
 
-	globals.sign_key = from_ngx_str_malloc(r->pool, sobek_loc_conf->sign_key);
-	globals.cookie_name = from_ngx_str_malloc(r->pool, sobek_loc_conf->cookie_name);
-	globals.cookie_ttl = sobek_loc_conf->cookie_ttl;
-	globals.init = true;
+	globals->sign_key = from_ngx_str_malloc(r->pool, sobek_loc_conf->sign_key);
+	globals->cookie_name = from_ngx_str_malloc(r->pool, sobek_loc_conf->cookie_name);
+	globals->cookie_ttl = sobek_loc_conf->cookie_ttl;
+	globals->init = true;
 }
 
 /**
@@ -181,11 +181,11 @@ ngx_int_t create_signature(ngx_http_request_t *r, time_t timestamp, char *challe
 	}
 
 	ossl_alg = EVP_sha256();
-	HMAC(ossl_alg, globals.sign_key, strlen(globals.sign_key), (const unsigned char *)to_sign, strlen(to_sign), sig, &sig_len);
+	HMAC(ossl_alg, globals->sign_key, strlen(globals->sign_key), (const unsigned char *)to_sign, strlen(to_sign), sig, &sig_len);
 
 	// Convert signature to Base-16
 	base16_encode(sig, SIGNATURE_LENGTH, signature);
-	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "HMAC: %s", sig_b16);
+	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "HMAC: %s", signature);
 
 	return 0;
 }
