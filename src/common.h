@@ -65,6 +65,8 @@ typedef struct {
 // Local config
 typedef struct {
 	ngx_str_t sign_key;
+	ngx_str_t cookie_name;
+	time_t cookie_ttl;
 } ngx_http_sobek_loc_conf_t;
 
 // Globals
