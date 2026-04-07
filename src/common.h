@@ -22,6 +22,7 @@
 #include <openssl/pem.h>
 #include <openssl/rand.h>
 #include <openssl/sha.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>

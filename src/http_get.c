@@ -14,16 +14,14 @@ extern ngx_module_t ngx_http_sobek_module;
  * GET Content handler
  */
 ngx_int_t sobek_handler_get(ngx_http_request_t *r) {
-	ngx_int_t ret = NGX_OK;
-	session_t *session;
 	struct timeval tv;
 	int res;
-	unsigned int dig_len=0, i, json_len;
-	unsigned char *random, *challenge, *to_sign, *sig, *sig_b16, *json;
+	unsigned int json_len;
+	unsigned char *random, *sig_b16;
+	char *challenge, *json;
 	ngx_buf_t *buf = NULL;
-	ngx_chain_t *out, *bufs;
+	ngx_chain_t *out;
 	ngx_int_t ret = NGX_OK;
-	const EVP_MD *ossl_alg;
 
 	// Init globals if this is the first request on current thread
 	globals_init(r);
@@ -39,19 +37,19 @@ ngx_int_t sobek_handler_get(ngx_http_request_t *r) {
 	// Get random & convert it to Base-16 challenge
 	if ((random = ngx_pcalloc(r->pool, CHALLENGE_LENGTH)) == NULL) {
 		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "GET failed to allocate %l bytes for random data.", CHALLENGE_LENGTH);
-		return upload_cleanup(r, upload, NGX_HTTP_INTERNAL_SERVER_ERROR);
-	}
-
-	if ((challenge = ngx_pcalloc(r->pool, 2 * CHALLENGE_LENGTH)) == NULL) {
-		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "GET failed to allocate %l bytes for challenge.", 2 * CHALLENGE_LENGTH);
-		return upload_cleanup(r, upload, NGX_HTTP_INTERNAL_SERVER_ERROR);
+		return NGX_HTTP_INTERNAL_SERVER_ERROR;
 	}
 
 	if ((res = RAND_bytes(random, CHALLENGE_LENGTH)) < 1) {
-		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "GET failed to generate %l bytes of random data: %s", CHALLENGE_LENGTH, ERR_error_string(ERR_get_error(), NULL))
+		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "GET failed to generate %l bytes of random data: %s", CHALLENGE_LENGTH, ERR_error_string(ERR_get_error(), NULL));
 		return NGX_HTTP_INTERNAL_SERVER_ERROR;
 	}
 	base16_encode(random, CHALLENGE_LENGTH, challenge);
+
+	if ((challenge = ngx_pcalloc(r->pool, 2 * CHALLENGE_LENGTH)) == NULL) {
+		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "GET failed to allocate %l bytes for challenge.", 2 * CHALLENGE_LENGTH);
+		return NGX_HTTP_INTERNAL_SERVER_ERROR;
+	}
 
 	// Prepare space for signature in Base-16
 	if ((sig_b16 = ngx_pcalloc(r->pool, 2 * SIGNATURE_LENGTH + 1)) == NULL) {
@@ -86,11 +84,11 @@ signature:"0123456789abcdef..."
 	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "GET JSON length: %l", json_len);
 
 	strcpy(json, "{timestamp:");
-	sprintf(json + strlen(json), "%i", tv.tv_sec);
+	sprintf(json + strlen(json), "%l", tv.tv_sec);
 	strcpy(json + strlen(json), ",challenge:\"");
 	memcpy(json + strlen(json), challenge, 2 * CHALLENGE_LENGTH)
 	strcpy(json + strlen(json), "\",signature:\"");
-	memcpy(json + strlen(json), sig_b16, 2 * SIGNATURE_LENGTH)
+	memcpy(json + strlen(json), sig_b16, 2 * SIGNATURE_LENGTH);
 	strcpy(json + strlen(json), "\"}");
 	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "GET JSON: %s", json);
 
@@ -128,5 +126,7 @@ signature:"0123456789abcdef..."
 	ret = ngx_http_send_header(r);
 	ret = ngx_http_output_filter(r, out);
 	ngx_http_finalize_request(r, ret);
+
+	return NGX_OK;
 }
 
