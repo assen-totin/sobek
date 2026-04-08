@@ -16,7 +16,7 @@ void sobek_handler_post (ngx_http_request_t *r) {
 	int cookie_len;
 	unsigned int sig_len, pld_len;
 	long content_length, rb_pos = 0;
-	time_t exp, ff_timestamp;
+	time_t exp, ff_timestamp = 0;
 	off_t len = 0, len_buf;
 	size_t to_hash_len;
 
@@ -136,7 +136,7 @@ void sobek_handler_post (ngx_http_request_t *r) {
 			ff_solution = form_field_value;
 	}
 
-	if (! ff_timestamp || ! ff_challenge || ! ff_signature || ! ff_solution)
+	if ((ff_timestamp == 0) || ! ff_challenge || ! ff_signature || ! ff_solution)
 		return ngx_http_finalize_request(r, NGX_HTTP_BAD_REQUEST);
 
 	// Verify signature
