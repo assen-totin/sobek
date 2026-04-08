@@ -1,6 +1,11 @@
 <html>
 	<head>
 		<script>
+			function error_log(msg) {
+				var el = document.getElementById("error");
+				el.innerHTML = msg;
+			}
+
 			async function sha256(challenge) {
 				var solution = 0;
 
@@ -39,7 +44,7 @@
 				}
 			}
 
-			var sobek = function() {
+			function sobek() {
 				// Get URL from location
 				var locProto = document.location.protocol;
 				var locHostname = document.location.hostname;
@@ -49,8 +54,11 @@
 				// Get challenge
 				var xhr = new XMLHttpRequest();
 				xhr.onreadystatechange = function() {
-					if ((this.readyState != 4) || (this.status != 200))
-						return console.log('Error getting challenge: ' + this.status);
+					if ((this.readyState != 4) || (this.status != 200)) {
+						console.log('Error getting challenge: ' + this.status);
+						error_log('Error getting challenge: ' + this.status);
+						return;
+					}
 
 					console.log(xhr.responseText);
 					var data = JSON.parse(xhr.responseText);
@@ -62,8 +70,11 @@
 						// Submit solution together with the original challenge, timestamp and signature
 						var xhr2 = new XMLHttpRequest();
 						xhr2.onreadystatechange = function() {
-							if ((this.readyState != 4) || (this.status != 200))
-								return console.log('Error sending solution: ' + this.status);
+							if ((this.readyState != 4) || (this.status != 200)) {
+								console.log('Error sending solution: ' + this.status);
+								error_log('Error sending solution: ' + this.status);
+								return;
+							}
 
 							// Set cookie as returned by the backend
 							document.cookie = xhr.responseText; 
@@ -84,6 +95,7 @@
 	</head>
 	<body onLoad=javascript:sobek();>
 		<h3>Checking that you are not a bot...</h3>
+		<h4 id=error style="color:red;"></h4>
 	</body>
 <html>
 

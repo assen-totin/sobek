@@ -14,15 +14,16 @@
 void sobek_handler_post (ngx_http_request_t *r) {
 	int res;
 	int cookie_len;
-	unsigned int sig_len;
+	unsigned int sig_len, pld_len;
 	long content_length, rb_pos = 0;
-	time_t exp;
+	time_t exp, ff_timestamp;
 	off_t len = 0, len_buf;
+	size_t to_hash_len;
 
 	char *content_length_z, *content_type, *part = NULL, *part_pos = NULL,  *part_end;
 	char *sig_b16;
 	char *rb, *form_field_name = NULL, *form_field_value = NULL;
-	char *ff_timestamp = NULL, *ff_challenge = NULL, *ff_signature = NULL, *ff_solution = NULL;
+	char *ff_challenge = NULL, *ff_signature = NULL, *ff_solution = NULL;
 	char *hash_b16;
 	char *pld, *pld_b16, *cookie;
 	unsigned char *to_hash, *hash, *sig;
@@ -47,9 +48,7 @@ void sobek_handler_post (ngx_http_request_t *r) {
 	// Extract content type from header
 	content_type = from_ngx_str(r->pool, r->headers_in.content_type->value);
 	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "POST found header Content-Type: %s", content_type);
-	if (strstr(content_type, CONTENT_TYPE_A_XWFU))
-		;
-	else {
+	if (! strstr(content_type, CONTENT_TYPE_A_XWFU))
 		ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "POST Content-Type %s not supported", content_type);
 		return ngx_http_finalize_request(r, NGX_HTTP_BAD_REQUEST);
 	}
@@ -118,7 +117,7 @@ void sobek_handler_post (ngx_http_request_t *r) {
 			part ++;
 		}
 
-		// Extract form field name
+		// Extract form field value
 		if ((form_field_value = ngx_pcalloc(r->pool, part_end - part_pos + 1)) == NULL) {
 			ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "POST failed to allocate %l bytes for for field name.", part_end - part_pos + 1);
 			return ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
@@ -128,7 +127,7 @@ void sobek_handler_post (ngx_http_request_t *r) {
 
 		// Decide what to do with the field
 		if (! strcmp(form_field_name, "timestamp"))
-			ff_timestamp = form_field_value;
+			ff_timestamp = atol(form_field_value);
 		else if (! strcmp(form_field_name, "challenge"))
 			ff_challenge = form_field_value;
 		else if (! strcmp(form_field_name, "signature"))
@@ -147,13 +146,12 @@ void sobek_handler_post (ngx_http_request_t *r) {
 		return ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
 	}
 
-	if ((res = create_signature(r, atol(ff_timestamp), ff_challenge, sig_b16)) > 0)
+	if ((res = create_signature(r, ff_timestamp, ff_challenge, sig_b16)) > 0)
 		return ngx_http_finalize_request(r, res);
 
-	if (memcpy(ff_signature, sig_b16, SIGNATURE_LENGTH)) {
+	if (memcmp(ff_signature, sig_b16, SIGNATURE_LENGTH)) {
 		ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "POST signature mismatch: calculated %s received %s", sig_b16, ff_signature);
-		// FIXME: Return other code here?
-		return ngx_http_finalize_request(r, NGX_HTTP_BAD_REQUEST);
+		return ngx_http_finalize_request(r, 402);
 	}
 
 	// Verify timestamp is not too old
@@ -161,30 +159,30 @@ void sobek_handler_post (ngx_http_request_t *r) {
 		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "POST failed to get current time: %s", strerror(errno));
 		return ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
 	}
-	if (tv.tv_sec - atol(ff_timestamp) > CHALLENGE_TTL) {
+	if (tv.tv_sec - ff_timestamp > CHALLENGE_TTL) {
 		ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "POST timestamp is too old: current %l, receiver %s, ttl %l", tv.tv_sec, ff_timestamp, CHALLENGE_TTL);
-		// FIXME: Return other code here?
-		return ngx_http_finalize_request(r, NGX_HTTP_BAD_REQUEST);
+		return ngx_http_finalize_request(r, 402);
 	}
 
 	// Verify solution
-	if ((to_hash = ngx_pcalloc(r->pool, strlen(ff_challenge) + strlen(ff_solution))) == NULL) {
-		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "POST failed to allocate %l bytes for solution verification.", strlen(ff_challenge) + strlen(ff_solution));
-		return ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
-	}
-
-	if ((hash = ngx_pcalloc(r->pool, HASH_LENGTH)) == NULL) {
-		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "POST failed to allocate %l bytes for hash.", HASH_LENGTH);
+	to_hash_len = strlen(ff_challenge) + strlen(ff_solution);
+	if ((to_hash = ngx_pcalloc(r->pool, to_hash_len)) == NULL) {
+		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "POST failed to allocate %l bytes for solution verification.", to_hash_len);
 		return ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
 	}
 
 	memcpy(to_hash, ff_challenge, strlen(ff_challenge));
 	memcpy(to_hash + strlen(ff_challenge), ff_solution, strlen(ff_solution));
 
-	SHA256(to_hash, strlen(ff_challenge) + strlen(ff_solution), hash);
+	if ((hash = ngx_pcalloc(r->pool, HASH_LENGTH)) == NULL) {
+		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "POST failed to allocate %l bytes for hash.", HASH_LENGTH);
+		return ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
+	}
+
+	SHA256(to_hash, to_hash_len, hash);
 
 	// Encode hash to Base-16 (for logging)
-	if ((hash = ngx_pcalloc(r->pool, 2 * HASH_LENGTH + 1)) == NULL) {
+	if ((hash_b16 = ngx_pcalloc(r->pool, 2 * HASH_LENGTH + 1)) == NULL) {
 		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "POST failed to allocate %l bytes for hash in Base-16.", 2 * HASH_LENGTH + 1);
 		return ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
 	}
@@ -194,8 +192,7 @@ void sobek_handler_post (ngx_http_request_t *r) {
 	// Check if hash begins with two zeroes
 	if ((*hash != 0) || (*(hash + 1) != 0)) {
 		ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "Solution failed");
-		// FIXME: Return other code here?
-		return ngx_http_finalize_request(r, NGX_HTTP_BAD_REQUEST);
+		return ngx_http_finalize_request(r, 402);
 	}
 
 	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "Solution verified");
@@ -206,20 +203,23 @@ void sobek_handler_post (ngx_http_request_t *r) {
 	// Signature is also converted to Base-16 for transmission
 	/*
 	{
-		exp:1234567890
+		"exp":1234567890
 	}
 	*/
-	if ((pld = ngx_pcalloc(r->pool, 17)) == NULL) {
-		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "POST failed to allocate %l bytes for payload.", 17);
+	pld_len = 1 + 6 + 10 + 1 + 1;
+	if ((pld = ngx_pcalloc(r->pool, pld_len)) == NULL) {
+		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "POST failed to allocate %l bytes for payload.", pld_len);
 		return ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
 	}
-	exp = tv.tv_sec + globals->cookie_ttl;
-	sprintf(pld, "{exp:%li}", exp);
 
-	if ((pld_b16 = ngx_pcalloc(r->pool, 2*17)) == NULL) {
-		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "POST failed to allocate %l bytes for payload in Base-16.", 2*17);
+	exp = tv.tv_sec + globals->cookie_ttl;
+	sprintf(pld, "{\"exp\":%li}", exp);
+
+	if ((pld_b16 = ngx_pcalloc(r->pool, 2 * pld_len + 1)) == NULL) {
+		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "POST failed to allocate %l bytes for payload in Base-16.", 2 * pld_len);
 		return ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
 	}
+
 	base16_encode((unsigned char *) pld, strlen(pld), pld_b16);
 
 	// Sign cookie
@@ -228,6 +228,7 @@ void sobek_handler_post (ngx_http_request_t *r) {
 		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "Failed to allocate %l bytes for cookie signature", SIGNATURE_LENGTH);
 		return ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
 	}
+
 	ossl_alg = EVP_sha256();
 	HMAC(ossl_alg, globals->sign_key, strlen(globals->sign_key), (const unsigned char *)pld, strlen(pld), sig, &sig_len);
 
@@ -236,6 +237,7 @@ void sobek_handler_post (ngx_http_request_t *r) {
 		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "Failed to allocate %l bytes for cookie signature", SIGNATURE_LENGTH);
 		return ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
 	}
+
 	base16_encode(sig, SIGNATURE_LENGTH, sig_b16);
 	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "Cookie HMAC: %s", sig_b16);
 
@@ -246,9 +248,11 @@ void sobek_handler_post (ngx_http_request_t *r) {
 		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "Failed to allocate %l bytes for cookie", cookie_len);
 		return ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
 	}
+
+	sprintf(cookie, "%s=%s@%s", globals->cookie_name, pld_b16, sig_b16);
+
 	// Add expiration time from "exp"
 	gmtime_r(&exp, &gmt);
-	sprintf(cookie, "%s=%s@%s", globals->cookie_name, pld_b16, sig_b16);
 	strftime(cookie + strlen(cookie), 47, "; expires=%a, %d %b %Y %H:%M:%S UTC; path=/", &gmt);
 
 	// Prepare output chain

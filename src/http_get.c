@@ -44,12 +44,13 @@ ngx_int_t sobek_handler_get(ngx_http_request_t *r) {
 		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "GET failed to generate %l bytes of random data: %s", CHALLENGE_LENGTH, ERR_error_string(ERR_get_error(), NULL));
 		return NGX_HTTP_INTERNAL_SERVER_ERROR;
 	}
-	base16_encode(random, CHALLENGE_LENGTH, challenge);
 
 	if ((challenge = ngx_pcalloc(r->pool, 2 * CHALLENGE_LENGTH)) == NULL) {
 		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "GET failed to allocate %l bytes for challenge.", 2 * CHALLENGE_LENGTH);
 		return NGX_HTTP_INTERNAL_SERVER_ERROR;
 	}
+
+	base16_encode(random, CHALLENGE_LENGTH, challenge);
 
 	// Prepare space for signature in Base-16
 	if ((sig_b16 = ngx_pcalloc(r->pool, 2 * SIGNATURE_LENGTH + 1)) == NULL) {
@@ -57,16 +58,16 @@ ngx_int_t sobek_handler_get(ngx_http_request_t *r) {
 		return NGX_HTTP_INTERNAL_SERVER_ERROR;
 	}
 
-	// Get signature
+	// Get signature for challenge and timestamp
 	if ((res = create_signature(r, tv.tv_sec, challenge, sig_b16)) > 0)
 		return res;
 
 	// Prepare output JSON
 /*
 {
-timestamp:1234567890,
-challenge:"abcdef...",
-signature:"0123456789abcdef..." 
+"timestamp":1234567890,
+"challenge":"abcdef...",
+"signature":"0123456789abcdef..." 
 }
 
 1
@@ -76,18 +77,18 @@ signature:"0123456789abcdef..."
 1
 + NULL byte
 */
-	json_len = 1 + 10 + 10 + 1 + 11 + 2 * CHALLENGE_LENGTH + 2 + 11 + 2 * SIGNATURE_LENGTH + 1 + 1 + 1;	
+	json_len = 1 + 12 + 10 + 1 + 13 + 2 * CHALLENGE_LENGTH + 2 + 13 + 2 * SIGNATURE_LENGTH + 1 + 1 + 1;	
 	if ((json = ngx_pcalloc(r->pool, json_len)) == NULL) {
 		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "GET failed to allocate %l bytes for JSON.", json_len);
 		return NGX_HTTP_INTERNAL_SERVER_ERROR;
 	}
 	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "GET JSON length: %l", json_len);
 
-	strcpy(json, "{timestamp:");
+	strcpy(json, "{\"timestamp\":");
 	sprintf(json + strlen(json), "%li", tv.tv_sec);
-	strcpy(json + strlen(json), ",challenge:\"");
+	strcpy(json + strlen(json), ",\"challenge\":\"");
 	memcpy(json + strlen(json), challenge, 2 * CHALLENGE_LENGTH);
-	strcpy(json + strlen(json), "\",signature:\"");
+	strcpy(json + strlen(json), "\",\"signature\":\"");
 	memcpy(json + strlen(json), sig_b16, 2 * SIGNATURE_LENGTH);
 	strcpy(json + strlen(json), "\"}");
 	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "GET JSON: %s", json);

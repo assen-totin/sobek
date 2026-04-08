@@ -30,6 +30,9 @@ Sobek Nginx module
 
 %install
 
+mkdir -p $RPM_BUILD_ROOT/etc/nginx/conf.d
+cp -r ${RPM_SOURCE_DIR}/support-files/nginx/conf.d/* $RPM_BUILD_ROOT/etc/nginx/conf.d
+
 mkdir -p $RPM_BUILD_ROOT/usr/share/nginx/modules
 cp -r ${RPM_SOURCE_DIR}/support-files/nginx/modules/* $RPM_BUILD_ROOT/usr/share/nginx/modules
 
@@ -47,6 +50,7 @@ rm -rf $RPM_BUILD_ROOT
 %files
 
 %defattr(-, root, root)
+/etc/nginx/conf.d/*
 /usr/share/sobek
 /usr/share/nginx/modules/*
 /usr/lib64/nginx/modules/*
