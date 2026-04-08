@@ -44,6 +44,8 @@ cp -r ${RPM_SOURCE_DIR}/www $RPM_BUILD_ROOT/usr/share/sobek
 
 mkdir -p $RPM_BUILD_ROOT/var/www/sobek
 
+mkdir -p $RPM_BUILD_ROOT/var/log/nginx/sobek
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 
@@ -55,12 +57,13 @@ rm -rf $RPM_BUILD_ROOT
 /usr/share/nginx/modules/*
 /usr/lib64/nginx/modules/*
 /var/www/sobek
+/var/log/nginx/sobek
 
 %pre
 
 %post
 
-if [ $1 == 1] ; then
+if [ $1 == 1 ] ; then
 	cp -r /usr/share/sobek/www/* /var/www/sobek
 fi
 
