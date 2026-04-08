@@ -48,7 +48,7 @@ void sobek_handler_post (ngx_http_request_t *r) {
 	// Extract content type from header
 	content_type = from_ngx_str(r->pool, r->headers_in.content_type->value);
 	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "POST found header Content-Type: %s", content_type);
-	if (! strstr(content_type, CONTENT_TYPE_A_XWFU))
+	if (! strstr(content_type, CONTENT_TYPE_A_XWFU)) {
 		ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "POST Content-Type %s not supported", content_type);
 		return ngx_http_finalize_request(r, NGX_HTTP_BAD_REQUEST);
 	}
