@@ -52,7 +52,7 @@ rm -rf $RPM_BUILD_ROOT
 %files
 
 %defattr(-, root, root)
-/etc/nginx/conf.d/*
+%config(noreplace) %attr(640, root, nginx) /etc/nginx/conf.d/*
 /usr/share/sobek
 /usr/share/nginx/modules/*
 /usr/lib64/nginx/modules/*
