@@ -35,6 +35,8 @@ void* ngx_http_sobek_create_loc_conf(ngx_conf_t* cf) {
 		return NGX_CONF_ERROR;
 	}
 
+	loc_conf->cookie_ttl = NGX_CONF_UNSET;
+
 	return loc_conf;
 }
 

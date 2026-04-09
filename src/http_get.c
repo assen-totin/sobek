@@ -47,11 +47,7 @@ ngx_int_t sobek_handler_get(ngx_http_request_t *r) {
 		return NGX_HTTP_INTERNAL_SERVER_ERROR;
 	}
 
-	//base16_encode2(r, random, CHALLENGE_LENGTH, challenge);
-	//base16_encode(random, CHALLENGE_LENGTH, challenge);
-	int i;
-	for (i=0; i < CHALLENGE_LENGTH; i++)
-		sprintf(challenge + 2 * i, "%c%c", HEX[random[i] >> 4], HEX[random[i] & 0x0F]);
+	base16_encode(random, CHALLENGE_LENGTH, challenge);
 
 	// Prepare space for signature in Base-16
 	if ((sig_b16 = ngx_pcalloc(r->pool, 2 * SIGNATURE_LENGTH + 1)) == NULL) {
@@ -120,7 +116,6 @@ ngx_int_t sobek_handler_get(ngx_http_request_t *r) {
 
 	ret = ngx_http_send_header(r);
 	ret = ngx_http_output_filter(r, out);
-	//ngx_http_finalize_request(r, ret);
 
 	return NGX_OK;
 }

@@ -79,25 +79,8 @@ char *from_ngx_str_malloc(ngx_pool_t *pool, ngx_str_t ngx_str) {
  */
 void base16_encode(unsigned char *in, int len, char *out) {
 	int i;
-
-	for (i=0; i < len; i++) {
-		//out[i * 2] = "0123456789abcdef"[in[i] >> 4];
-		//*(out + 2 * i) = "0123456789abcdef"[in[i] >> 4];
-		//out[i * 2 + 1] = "0123456789abcdef"[in[i] & 0x0F];
-		//*(out + 2 * i + 1) = "0123456789abcdef"[in[i] & 0x0F];
+	for (i=0; i < len; i++)
 		sprintf(out + 2 * i, "%c%c", HEX[in[i] >> 4], HEX[in[i] & 0x0F]);
-	}
-}
-
-void base16_encode2(ngx_http_request_t *r, unsigned char *in, int len, char *out) {
-	int i;
-
-	for (i=0; i < len; i++) {
-ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "ITER: %l", i);
-		out[i * 2] = "0123456789abcdef"[in[i] >> 4];
-		out[i * 2 + 1] = "0123456789abcdef"[in[i] & 0x0F];
-ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "CHALLENGE: %s", out);
-	}
 }
 
 /**
@@ -205,12 +188,7 @@ ngx_int_t create_signature(ngx_http_request_t *r, time_t timestamp, char *challe
 	HMAC(ossl_alg, settings->sign_key, strlen(settings->sign_key), (const unsigned char *)to_sign, strlen(to_sign), sig, &sig_len);
 
 	// Convert signature to Base-16
-	//base16_encode(sig, SIGNATURE_LENGTH, signature);
-	//base16_encode2(r, sig, SIGNATURE_LENGTH, signature);
-	int i;
-	for (i=0; i < SIGNATURE_LENGTH; i++)
-		sprintf(signature + 2 * i, "%c%c", HEX[sig[i] >> 4], HEX[sig[i] & 0x0F]);
-
+	base16_encode(sig, SIGNATURE_LENGTH, signature);
 	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "HMAC: %s", signature);
 
 	return 0;
