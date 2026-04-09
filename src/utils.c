@@ -101,6 +101,8 @@ settings_t *get_settings(ngx_http_request_t *r) {
 	settings->sign_key = from_ngx_str(r->pool, sobek_loc_conf->sign_key);
 	settings->cookie_name = from_ngx_str(r->pool, sobek_loc_conf->cookie_name);
 	settings->cookie_ttl = sobek_loc_conf->cookie_ttl;
+	settings->challenge_length = (unsigned int) sobek_loc_conf->challenge_length;
+	settings->challenge_ttl = sobek_loc_conf->challenge_ttl;
 
 	return settings;
 }

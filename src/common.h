@@ -67,7 +67,7 @@ typedef struct {
 	ngx_str_t sign_key;
 	ngx_str_t cookie_name;
 	time_t cookie_ttl;
-	unsigned int challenge_length;
+	ngx_int_t challenge_length;
 	time_t challenge_ttl;
 } ngx_http_sobek_loc_conf_t;
 
