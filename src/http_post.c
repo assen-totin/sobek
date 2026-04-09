@@ -272,7 +272,7 @@ void sobek_handler_post (ngx_http_request_t *r) {
 	// Set the buffer
 	buf->pos = (u_char *) cookie;
 	buf->last = (u_char *) cookie + strlen(cookie);
-	buf->mmap = 1; 
+	buf->memory = 1; 
 	buf->last_buf = 1; 
 
 	// Status

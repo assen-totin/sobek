@@ -66,20 +66,13 @@ ngx_int_t sobek_handler_get(ngx_http_request_t *r) {
 "challenge":"abcdef...",
 "signature":"0123456789abcdef..." 
 }
-
-1
-10 + 10 + 1
-11 + 2*CHALLENGE_LENGTH + 2
-11 + 2*SIGNATURE_LENGTH + 1
-1
-+ NULL byte
 */
 	json_len = 1 + 12 + 10 + 1 + 13 + 2 * CHALLENGE_LENGTH + 2 + 13 + 2 * SIGNATURE_LENGTH + 1 + 1 + 1;	
 	if ((json = ngx_pcalloc(r->pool, json_len)) == NULL) {
 		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "GET failed to allocate %l bytes for JSON.", json_len);
 		return NGX_HTTP_INTERNAL_SERVER_ERROR;
 	}
-	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "GET JSON length: %l", json_len);
+	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "GET JSON length: %l", json_len - 1);
 
 	strcpy(json, "{\"timestamp\":");
 	sprintf(json + strlen(json), "%li", tv.tv_sec);
@@ -109,8 +102,8 @@ ngx_int_t sobek_handler_get(ngx_http_request_t *r) {
 
 	// Set the buffer
 	buf->pos = (u_char *) json;
-	buf->last = (u_char *) json + json_len;
-	buf->mmap = 1; 
+	buf->last = (u_char *) json + strlen(json);
+	buf->memory = 1; 
 	buf->last_buf = 1; 
 
 	// Status
@@ -123,7 +116,7 @@ ngx_int_t sobek_handler_get(ngx_http_request_t *r) {
 
 	ret = ngx_http_send_header(r);
 	ret = ngx_http_output_filter(r, out);
-	ngx_http_finalize_request(r, ret);
+	//ngx_http_finalize_request(r, ret);
 
 	return NGX_OK;
 }
