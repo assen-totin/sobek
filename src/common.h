@@ -44,7 +44,8 @@
 //// DEFINITIONS
 
 #define CHALLENGE_LENGTH 64
-#define CHALLENGE_TTL 60
+//#define CHALLENGE_TTL 60
+#define CHALLENGE_TTL 86400
 #define CONTENT_TYPE_A_J "application/json"
 #define CONTENT_TYPE_A_XWFU "application/x-www-form-urlencoded"
 #define CONTENT_TYPE_T_P "text/plain"

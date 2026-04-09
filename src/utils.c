@@ -91,7 +91,7 @@ settings_t *get_settings(ngx_http_request_t *r) {
 	settings_t *settings;
 
 	if ((settings = ngx_pcalloc(r->pool, sizeof(settings_t))) == NULL) {
-		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "POST failed to allocate %l bytes for settings.", sizeof(settings_t));
+		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "POST failed to allocate %l bytes for settings", sizeof(settings_t));
 		return NULL;
 	}
 

@@ -161,7 +161,7 @@ void sobek_handler_post (ngx_http_request_t *r) {
 		return ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
 	}
 	if (tv.tv_sec - ff_timestamp > CHALLENGE_TTL) {
-		ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "POST timestamp is too old: current %l, receiver %s, ttl %l", tv.tv_sec, ff_timestamp, CHALLENGE_TTL);
+		ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "POST timestamp is too old: current %l, receiver %l, ttl %l", tv.tv_sec, ff_timestamp, CHALLENGE_TTL);
 		return ngx_http_finalize_request(r, 402);
 	}
 
