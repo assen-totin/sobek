@@ -34,19 +34,19 @@ For a number of reasons:
 
 The workflow is as follows:
 
--> A web client opens www.example.com and reaches the HAProxy in front of it.
-∴ HAProxy checks the presence of the Sobek cookie. If it exists, the request is forwarded to the appropriate backend for www.example.com 
-∴ If the Sobek cookie is missing, HAProxy forwards the request to the Sobek backend (the Nginx module) instead
-<- The Sobek backend responds with some simple JavaScript code. It may, optionally, include a "Please wait" (or “Verifying you are not a robot”) page, or just keep the page blank while the challenge is being processed by the web client
--> The web client runs the JavaScript code, which makes an AJAX GET request to /sobek on the same domain to fetch a challenge; HAProxy ensures requests to /sobek are always routed to the Sobek Nginx module
-∴ Sobek backend generates a challenge, adds the current timestamp and signes them with its key.
-<- Sobek backend sends the challenge to the web client
-∴ The web client solves the challenge
--> The web client makes a POST AJAX request to /sobek to submit the solution together with the challenge, its timestamp and signature
-∴ The Sobek backend verifies that the challenge is not too old, that its signature is correct and that the challenge has been properly solved
-<- The Sobek backend returns its cookie (valid for certain amount of time) to the web client
-∴ The JavaScript code on the web client sets the Sobek cookie for the domain it was loaded from
-∴ The JavaScript code on the web client reloads the page; the request now includes Sobek cookie and gets routed by HAProxy to the proper backend.
+- -> A web client opens www.example.com and reaches the HAProxy in front of it.
+- ∴ HAProxy checks the presence of the Sobek cookie. If it exists, the request is forwarded to the appropriate backend for www.example.com 
+- ∴ If the Sobek cookie is missing, HAProxy forwards the request to the Sobek backend (the Nginx module) instead
+- <- The Sobek backend responds with some simple JavaScript code. It may, optionally, include a "Please wait" (or “Verifying you are not a robot”) page, or just keep the page blank while the challenge is being processed by the web client
+- -> The web client runs the JavaScript code, which makes an AJAX GET request to /sobek on the same domain to fetch a challenge; HAProxy ensures requests to /sobek are always routed to the Sobek Nginx module
+- ∴ Sobek backend generates a challenge, adds the current timestamp and signes them with its key.
+- <- Sobek backend sends the challenge to the web client
+- ∴ The web client solves the challenge
+- -> The web client makes a POST AJAX request to /sobek to submit the solution together with the challenge, its timestamp and signature
+- ∴ The Sobek backend verifies that the challenge is not too old, that its signature is correct and that the challenge has been properly solved
+- <- The Sobek backend returns its cookie (valid for certain amount of time) to the web client
+- ∴ The JavaScript code on the web client sets the Sobek cookie for the domain it was loaded from
+- ∴ The JavaScript code on the web client reloads the page; the request now includes Sobek cookie and gets routed by HAProxy to the proper backend.
 
 ## THE CHALLENGE
 
