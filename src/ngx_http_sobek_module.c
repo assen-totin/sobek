@@ -47,7 +47,7 @@ char* ngx_http_sobek_merge_loc_conf(ngx_conf_t* cf, void* void_parent, void* voi
 
 	ngx_conf_merge_str_value(child->sign_key, parent->sign_key, DEFAULT_SIGN_KEY);
 	ngx_conf_merge_str_value(child->cookie_name, parent->cookie_name, DEFAULT_COOKIE_NAME);
-	ngx_conf_merge_uint_value(child->cookie_ttl, parent->cookie_ttl, DEFAULT_COOKIE_TTL);
+	ngx_conf_merge_sec_value(child->cookie_ttl, parent->cookie_ttl, DEFAULT_COOKIE_TTL);
 
 	return NGX_CONF_OK;
 }
