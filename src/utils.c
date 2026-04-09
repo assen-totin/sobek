@@ -82,9 +82,10 @@ void base16_encode(unsigned char *in, int len, char *out) {
 
 	for (i=0; i < len; i++) {
 		//out[i * 2] = "0123456789abcdef"[in[i] >> 4];
-		*(out + 2 * i) = "0123456789abcdef"[in[i] >> 4];
+		//*(out + 2 * i) = "0123456789abcdef"[in[i] >> 4];
 		//out[i * 2 + 1] = "0123456789abcdef"[in[i] & 0x0F];
-		*(out + 2 * i + 1) = "0123456789abcdef"[in[i] & 0x0F];
+		//*(out + 2 * i + 1) = "0123456789abcdef"[in[i] & 0x0F];
+		sprintf(out + 2 * i, "%c%c", HEX[in[i] >> 4], HEX[in[i] & 0x0F]);
 	}
 }
 

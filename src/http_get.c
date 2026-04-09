@@ -43,7 +43,7 @@ ngx_int_t sobek_handler_get(ngx_http_request_t *r) {
 	}
 
 	if ((challenge = ngx_pcalloc(r->pool, 2 * CHALLENGE_LENGTH + 1)) == NULL) {
-		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "GET failed to allocate %l bytes for challenge.", 2 * CHALLENGE_LENGTH);
+		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "GET failed to allocate %l bytes for challenge.", 2 * CHALLENGE_LENGTH + 1);
 		return NGX_HTTP_INTERNAL_SERVER_ERROR;
 	}
 
