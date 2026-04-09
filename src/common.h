@@ -36,11 +36,6 @@
 #include <time.h>
 #include <unistd.h>
 
-// RHEL 10 or newer
-#if __GLIBC_MINOR__ == 39
-	#define RHEL10
-#endif
-
 //// DEFINITIONS
 
 #define CONTENT_TYPE_A_J "application/json"
@@ -79,6 +74,4 @@ typedef struct {
 	unsigned int challenge_length;
 	time_t challenge_ttl;
 } settings_t;
-
-//// ENUMERATORS
 

@@ -160,7 +160,7 @@ char *trim_quotes(ngx_http_request_t *r, char *s) {
  * Create signature
  */
 ngx_int_t create_signature(ngx_http_request_t *r, time_t timestamp, char *challenge, int challenge_length, char *signature) {
-	char *to_sign; 
+	char *to_sign;
 	unsigned char *sig;
 	unsigned int sig_len;
 	const EVP_MD *ossl_alg;
