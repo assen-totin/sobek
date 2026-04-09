@@ -36,7 +36,7 @@ void* ngx_http_sobek_create_loc_conf(ngx_conf_t* cf) {
 	}
 
 	loc_conf->cookie_ttl = NGX_CONF_UNSET;
-	loc_conf->challenge_length = NGX_CONF_UNSET_UINT;
+	loc_conf->challenge_length = NGX_CONF_UNSET;
 	loc_conf->challenge_ttl = NGX_CONF_UNSET;
 
 	return loc_conf;
