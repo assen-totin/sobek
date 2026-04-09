@@ -47,7 +47,7 @@ ngx_int_t sobek_handler_get(ngx_http_request_t *r) {
 		return NGX_HTTP_INTERNAL_SERVER_ERROR;
 	}
 
-	base16_encode2(r, random, CHALLENGE_LENGTH, challenge);
+	base16_encode(r, random, CHALLENGE_LENGTH, challenge);
 
 	// Prepare space for signature in Base-16
 	if ((sig_b16 = ngx_pcalloc(r->pool, 2 * SIGNATURE_LENGTH + 1)) == NULL) {

@@ -202,7 +202,8 @@ ngx_int_t create_signature(ngx_http_request_t *r, time_t timestamp, char *challe
 	HMAC(ossl_alg, settings->sign_key, strlen(settings->sign_key), (const unsigned char *)to_sign, strlen(to_sign), sig, &sig_len);
 
 	// Convert signature to Base-16
-	base16_encode(sig, SIGNATURE_LENGTH, signature);
+	//base16_encode(sig, SIGNATURE_LENGTH, signature);
+	base16_encode2(r, sig, SIGNATURE_LENGTH, signature);
 	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "HMAC: %s", signature);
 
 	return 0;
