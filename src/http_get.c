@@ -42,13 +42,21 @@ ngx_int_t sobek_handler_get(ngx_http_request_t *r) {
 		return NGX_HTTP_INTERNAL_SERVER_ERROR;
 	}
 
-	if ((challenge = ngx_pcalloc(r->pool, 2 * CHALLENGE_LENGTH)) == NULL) {
+	if ((challenge = ngx_pcalloc(r->pool, 2 * CHALLENGE_LENGTH + 1)) == NULL) {
 		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "GET failed to allocate %l bytes for challenge.", 2 * CHALLENGE_LENGTH);
 		return NGX_HTTP_INTERNAL_SERVER_ERROR;
 	}
-ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "A");
-	base16_encode(random, CHALLENGE_LENGTH, challenge);
-ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "B");
+
+//	base16_encode(random, CHALLENGE_LENGTH, challenge);
+	int i;
+
+	for (i=0; i < CHALLENGE_LENGTH; i++) {
+ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "ITER: %l", i);
+		challenge[i * 2] = "0123456789abcdef"[random[i] >> 4];
+		challenge[i * 2 + 1] = "0123456789abcdef"[random[i] & 0x0F];
+ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "CHALLENGE: %s", challenge);
+	}
+
 	// Prepare space for signature in Base-16
 	if ((sig_b16 = ngx_pcalloc(r->pool, 2 * SIGNATURE_LENGTH + 1)) == NULL) {
 		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "GET failed to allocate %l bytes for signature in Base-16.", 2 * SIGNATURE_LENGTH + 1);
@@ -56,10 +64,8 @@ ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "B");
 	}
 
 	// Get signature for challenge and timestamp
-ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "C");
 	if ((res = create_signature(r, tv.tv_sec, challenge, sig_b16)) > 0)
 		return res;
-ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "D");
 
 	// Prepare output JSON
 /*
