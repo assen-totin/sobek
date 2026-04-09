@@ -14,6 +14,6 @@ char *trim_quotes(ngx_http_request_t *r, char *s);
 void base16_encode(unsigned char *in, int len, char *out);
 void base16_encode2(ngx_http_request_t *r, unsigned char *in, int len, char *out);
 settings_t *get_settings(ngx_http_request_t *r);
-ngx_int_t create_signature(ngx_http_request_t *r, time_t timestamp, char *challenge, char *signature);
+ngx_int_t create_signature(ngx_http_request_t *r, time_t timestamp, char *challenge, int challenge_length, char *signature);
 
 

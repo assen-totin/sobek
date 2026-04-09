@@ -44,8 +44,7 @@
 //// DEFINITIONS
 
 #define CHALLENGE_LENGTH 64
-//#define CHALLENGE_TTL 60
-#define CHALLENGE_TTL 86400
+#define CHALLENGE_TTL 60
 #define CONTENT_TYPE_A_J "application/json"
 #define CONTENT_TYPE_A_XWFU "application/x-www-form-urlencoded"
 #define CONTENT_TYPE_T_P "text/plain"
@@ -69,6 +68,8 @@ typedef struct {
 	ngx_str_t sign_key;
 	ngx_str_t cookie_name;
 	time_t cookie_ttl;
+	int challenge_length;
+	time_t challenge_ttl;
 } ngx_http_sobek_loc_conf_t;
 
 // Runtime settings
@@ -76,6 +77,8 @@ typedef struct {
 	char *sign_key;
 	char *cookie_name;
 	time_t cookie_ttl;
+	int challenge_length;
+	time_t challenge_ttl;
 } settings_t;
 
 //// ENUMERATORS

@@ -157,7 +157,7 @@ char *trim_quotes(ngx_http_request_t *r, char *s) {
 /**
  * Create signature
  */
-ngx_int_t create_signature(ngx_http_request_t *r, time_t timestamp, char *challenge, char *signature) {
+ngx_int_t create_signature(ngx_http_request_t *r, time_t timestamp, char *challenge, int challenge_length, char *signature) {
 	char *to_sign; 
 	unsigned char *sig;
 	unsigned int sig_len;
@@ -169,13 +169,13 @@ ngx_int_t create_signature(ngx_http_request_t *r, time_t timestamp, char *challe
 		return NGX_HTTP_INTERNAL_SERVER_ERROR;
 
 	// Prepare data to sign (does not have to be a NULL-terminated string, but this way we can log it)
-	if ((to_sign = ngx_pcalloc(r->pool, 2 * CHALLENGE_LENGTH + 12)) == NULL) {
-		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "Failed to allocate %l bytes for signing data.", 2 * CHALLENGE_LENGTH + 11);
+	if ((to_sign = ngx_pcalloc(r->pool, 2 * challenge_length + 12)) == NULL) {
+		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "Failed to allocate %l bytes for signing data.", 2 * challenge_length + 11);
 		return NGX_HTTP_INTERNAL_SERVER_ERROR;
 	}
 
-	memcpy(to_sign, challenge, 2 * CHALLENGE_LENGTH);
-	sprintf(to_sign + 2 * CHALLENGE_LENGTH, "@%li", timestamp);
+	memcpy(to_sign, challenge, 2 * challenge_length);
+	sprintf(to_sign + 2 * challenge_length, "@%li", timestamp);
 	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "Data to sign: %s", to_sign);
 
 	// Compute signature

@@ -147,7 +147,7 @@ void sobek_handler_post (ngx_http_request_t *r) {
 		return ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
 	}
 
-	if ((res = create_signature(r, ff_timestamp, ff_challenge, sig_b16)) > 0)
+	if ((res = create_signature(r, ff_timestamp, ff_challenge, strlen(ff_challenge), sig_b16)) > 0)
 		return ngx_http_finalize_request(r, res);
 
 	if (memcmp(ff_signature, sig_b16, SIGNATURE_LENGTH)) {
@@ -160,8 +160,8 @@ void sobek_handler_post (ngx_http_request_t *r) {
 		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "POST failed to get current time: %s", strerror(errno));
 		return ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
 	}
-	if (tv.tv_sec - ff_timestamp > CHALLENGE_TTL) {
-		ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "POST timestamp is too old: current %l, receiver %l, ttl %l", tv.tv_sec, ff_timestamp, CHALLENGE_TTL);
+	if (tv.tv_sec - ff_timestamp > settings->challenge_ttl) {
+		ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "POST timestamp is too old: current %l, receiver %l, ttl %l", tv.tv_sec, ff_timestamp, settings->challenge_ttl);
 		return ngx_http_finalize_request(r, 402);
 	}
 

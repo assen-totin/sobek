@@ -22,8 +22,13 @@ ngx_int_t sobek_handler_get(ngx_http_request_t *r) {
 	ngx_buf_t *buf = NULL;
 	ngx_chain_t *out;
 	ngx_int_t ret = NGX_OK;
+	settings_t *settings;
 
 	ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "GET processing request");
+
+	// Get settings
+	if ((settings = get_settings(r)) == NULL)
+		return NGX_HTTP_INTERNAL_SERVER_ERROR;
 
 	// Get current timestamp
 	if ((res = gettimeofday(&tv, NULL)) < 0) {
@@ -32,22 +37,22 @@ ngx_int_t sobek_handler_get(ngx_http_request_t *r) {
 	}
 
 	// Get random & convert it to Base-16 challenge
-	if ((random = ngx_pcalloc(r->pool, CHALLENGE_LENGTH)) == NULL) {
-		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "GET failed to allocate %l bytes for random data.", CHALLENGE_LENGTH);
+	if ((random = ngx_pcalloc(r->pool, settings->challenge_length)) == NULL) {
+		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "GET failed to allocate %l bytes for random data.", settings->challenge_length);
 		return NGX_HTTP_INTERNAL_SERVER_ERROR;
 	}
 
-	if ((res = RAND_bytes(random, CHALLENGE_LENGTH)) < 1) {
-		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "GET failed to generate %l bytes of random data: %s", CHALLENGE_LENGTH, ERR_error_string(ERR_get_error(), NULL));
+	if ((res = RAND_bytes(random, settings->challenge_length)) < 1) {
+		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "GET failed to generate %l bytes of random data: %s", settings->challenge_length, ERR_error_string(ERR_get_error(), NULL));
 		return NGX_HTTP_INTERNAL_SERVER_ERROR;
 	}
 
-	if ((challenge = ngx_pcalloc(r->pool, 2 * CHALLENGE_LENGTH + 1)) == NULL) {
-		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "GET failed to allocate %l bytes for challenge.", 2 * CHALLENGE_LENGTH + 1);
+	if ((challenge = ngx_pcalloc(r->pool, 2 * settings->challenge_length + 1)) == NULL) {
+		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "GET failed to allocate %l bytes for challenge.", 2 * settings->challenge_length + 1);
 		return NGX_HTTP_INTERNAL_SERVER_ERROR;
 	}
 
-	base16_encode(random, CHALLENGE_LENGTH, challenge);
+	base16_encode(random, settings->challenge_length, challenge);
 
 	// Prepare space for signature in Base-16
 	if ((sig_b16 = ngx_pcalloc(r->pool, 2 * SIGNATURE_LENGTH + 1)) == NULL) {
@@ -56,7 +61,7 @@ ngx_int_t sobek_handler_get(ngx_http_request_t *r) {
 	}
 
 	// Get signature for challenge and timestamp
-	if ((res = create_signature(r, tv.tv_sec, challenge, sig_b16)) > 0)
+	if ((res = create_signature(r, tv.tv_sec, challenge, strlen(challenge), sig_b16)) > 0)
 		return res;
 
 	// Prepare output JSON
@@ -67,7 +72,7 @@ ngx_int_t sobek_handler_get(ngx_http_request_t *r) {
 "signature":"0123456789abcdef..." 
 }
 */
-	json_len = 1 + 12 + 10 + 1 + 13 + 2 * CHALLENGE_LENGTH + 2 + 13 + 2 * SIGNATURE_LENGTH + 1 + 1 + 1;	
+	json_len = 1 + 12 + 10 + 1 + 13 + 2 * settings->challenge_length + 2 + 13 + 2 * SIGNATURE_LENGTH + 1 + 1 + 1;	
 	if ((json = ngx_pcalloc(r->pool, json_len)) == NULL) {
 		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "GET failed to allocate %l bytes for JSON.", json_len);
 		return NGX_HTTP_INTERNAL_SERVER_ERROR;
@@ -77,7 +82,7 @@ ngx_int_t sobek_handler_get(ngx_http_request_t *r) {
 	strcpy(json, "{\"timestamp\":");
 	sprintf(json + strlen(json), "%li", tv.tv_sec);
 	strcpy(json + strlen(json), ",\"challenge\":\"");
-	memcpy(json + strlen(json), challenge, 2 * CHALLENGE_LENGTH);
+	memcpy(json + strlen(json), challenge, 2 * settings->challenge_length);
 	strcpy(json + strlen(json), "\",\"signature\":\"");
 	memcpy(json + strlen(json), sig_b16, 2 * SIGNATURE_LENGTH);
 	strcpy(json + strlen(json), "\"}");

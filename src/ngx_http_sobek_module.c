@@ -36,6 +36,8 @@ void* ngx_http_sobek_create_loc_conf(ngx_conf_t* cf) {
 	}
 
 	loc_conf->cookie_ttl = NGX_CONF_UNSET;
+	loc_conf->challenge_length = NGX_CONF_UNSET_UINT;
+	loc_conf->challenge_ttl = NGX_CONF_UNSET;
 
 	return loc_conf;
 }
@@ -50,6 +52,8 @@ char* ngx_http_sobek_merge_loc_conf(ngx_conf_t* cf, void* void_parent, void* voi
 	ngx_conf_merge_str_value(child->sign_key, parent->sign_key, DEFAULT_SIGN_KEY);
 	ngx_conf_merge_str_value(child->cookie_name, parent->cookie_name, DEFAULT_COOKIE_NAME);
 	ngx_conf_merge_sec_value(child->cookie_ttl, parent->cookie_ttl, DEFAULT_COOKIE_TTL);
+	ngx_conf_merge_uint_value(child->challenge_length, parent->challenge_length, DEFAULT_CHALLENGE_LENGTH);
+	ngx_conf_merge_sec_value(child->challenge_ttl, parent->challenge_ttl, DEFAULT_CHALLENGE_TTL);
 
 	return NGX_CONF_OK;
 }
