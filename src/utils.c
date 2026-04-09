@@ -78,13 +78,15 @@ char *from_ngx_str_malloc(ngx_pool_t *pool, ngx_str_t ngx_str) {
  * Encode a string to base16 string
  */
 void base16_encode(unsigned char *in, int len, char *out) {
-	size_t  i;
+	int i;
+
+sobek_debug("LEN: %i", len);
 
 	for (i=0; i < len; i++) {
-		out[i * 2]   = "0123456789abcdef"[in[i] >> 4];
+sobek_debug("i: %i", i);
+		out[i * 2] = "0123456789abcdef"[in[i] >> 4];
 		out[i * 2 + 1] = "0123456789abcdef"[in[i] & 0x0F];
 	}
-	//out[len * 2] = '\0';
 }
 
 /**
