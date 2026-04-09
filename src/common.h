@@ -43,15 +43,14 @@
 
 //// DEFINITIONS
 
-#define CHALLENGE_LENGTH 64
-#define CHALLENGE_TTL 60
 #define CONTENT_TYPE_A_J "application/json"
 #define CONTENT_TYPE_A_XWFU "application/x-www-form-urlencoded"
 #define CONTENT_TYPE_T_P "text/plain"
+#define DEFAULT_CHALLENGE_LENGTH 64
+#define DEFAULT_CHALLENGE_TTL 60
 #define DEFAULT_COOKIE_NAME "sobek"
 #define DEFAULT_COOKIE_TTL 604800
 #define DEFAULT_SIGN_KEY "12345678901234567890123456789012"
-#define ERROR_MESSAGE_LENGTH 1024
 #define HASH_LENGTH 32
 #define HEX "0123456789abcdef"
 #define SIGNATURE_LENGTH 32
@@ -68,7 +67,7 @@ typedef struct {
 	ngx_str_t sign_key;
 	ngx_str_t cookie_name;
 	time_t cookie_ttl;
-	int challenge_length;
+	unsigned int challenge_length;
 	time_t challenge_ttl;
 } ngx_http_sobek_loc_conf_t;
 
@@ -77,7 +76,7 @@ typedef struct {
 	char *sign_key;
 	char *cookie_name;
 	time_t cookie_ttl;
-	int challenge_length;
+	unsigned int challenge_length;
 	time_t challenge_ttl;
 } settings_t;
 

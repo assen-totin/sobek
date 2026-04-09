@@ -120,8 +120,10 @@ ngx_int_t sobek_handler_get(ngx_http_request_t *r) {
 	r->headers_out.content_type.data = (u_char*) CONTENT_TYPE_A_J;
 
 	ret = ngx_http_send_header(r);
-	ret = ngx_http_output_filter(r, out);
+	if (ret == NGX_ERROR || ret > NGX_OK || r->header_only)
+        return ret;
 
-	return NGX_OK;
+	ret = ngx_http_output_filter(r, out);
+	return ret;
 }
 
