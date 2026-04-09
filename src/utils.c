@@ -86,6 +86,17 @@ void base16_encode(unsigned char *in, int len, char *out) {
 	}
 }
 
+void base16_encode2(ngx_http_request_t *r, unsigned char *in, int len, char *out) {
+	int i;
+
+	for (i=0; i < len; i++) {
+ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "ITER: %l", i);
+		out[i * 2] = "0123456789abcdef"[in[i] >> 4];
+		out[i * 2 + 1] = "0123456789abcdef"[in[i] & 0x0F];
+ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "CHALLENGE: %s", out);
+	}
+}
+
 /**
  * Init instance
  */

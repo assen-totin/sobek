@@ -47,15 +47,7 @@ ngx_int_t sobek_handler_get(ngx_http_request_t *r) {
 		return NGX_HTTP_INTERNAL_SERVER_ERROR;
 	}
 
-//	base16_encode(random, CHALLENGE_LENGTH, challenge);
-	int i;
-
-	for (i=0; i < CHALLENGE_LENGTH; i++) {
-ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "ITER: %l", i);
-		challenge[i * 2] = "0123456789abcdef"[random[i] >> 4];
-		challenge[i * 2 + 1] = "0123456789abcdef"[random[i] & 0x0F];
-ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "CHALLENGE: %s", challenge);
-	}
+	base16_encode2(random, CHALLENGE_LENGTH, challenge);
 
 	// Prepare space for signature in Base-16
 	if ((sig_b16 = ngx_pcalloc(r->pool, 2 * SIGNATURE_LENGTH + 1)) == NULL) {
