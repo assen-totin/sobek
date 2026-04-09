@@ -55,8 +55,8 @@ char* ngx_http_sobek_merge_loc_conf(ngx_conf_t* cf, void* void_parent, void* voi
 	ngx_conf_merge_uint_value(child->challenge_length, parent->challenge_length, DEFAULT_CHALLENGE_LENGTH);
 	ngx_conf_merge_sec_value(child->challenge_ttl, parent->challenge_ttl, DEFAULT_CHALLENGE_TTL);
 
-	if ((child->challenge_length < 32) || (child->challenge_length < 1024)) {
-		ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "Chalenge length must be between 32 and 1024"); 
+	if ((child->challenge_length < 32) || (child->challenge_length > 1024)) {
+		ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "Chalenge length must be between 32 and 1024, %l given", child->challenge_length); 
 		return NGX_CONF_ERROR;
 	}
 
