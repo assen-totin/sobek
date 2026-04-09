@@ -41,7 +41,7 @@ static ngx_command_t ngx_http_sobek_commands[] = {
 	{
 		ngx_string("sobek_cookie_ttl"),
 		NGX_HTTP_LOC_CONF | NGX_CONF_TAKE1,
-		ngx_conf_set_num_slot,
+		ngx_conf_set_sec_slot,
 		NGX_HTTP_LOC_CONF_OFFSET,
 		offsetof(ngx_http_sobek_loc_conf_t, cookie_ttl),
 		NULL
