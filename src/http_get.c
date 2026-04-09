@@ -23,7 +23,7 @@ ngx_int_t sobek_handler_get(ngx_http_request_t *r) {
 	ngx_chain_t *out;
 	ngx_int_t ret = NGX_OK;
 
-	ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "GET processing request.");
+	ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "GET processing request");
 
 	// Get current timestamp
 	if ((res = gettimeofday(&tv, NULL)) < 0) {
@@ -46,9 +46,9 @@ ngx_int_t sobek_handler_get(ngx_http_request_t *r) {
 		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "GET failed to allocate %l bytes for challenge.", 2 * CHALLENGE_LENGTH);
 		return NGX_HTTP_INTERNAL_SERVER_ERROR;
 	}
-
+ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "A");
 	base16_encode(random, CHALLENGE_LENGTH, challenge);
-
+ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "B");
 	// Prepare space for signature in Base-16
 	if ((sig_b16 = ngx_pcalloc(r->pool, 2 * SIGNATURE_LENGTH + 1)) == NULL) {
 		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "GET failed to allocate %l bytes for signature in Base-16.", 2 * SIGNATURE_LENGTH + 1);
@@ -56,8 +56,10 @@ ngx_int_t sobek_handler_get(ngx_http_request_t *r) {
 	}
 
 	// Get signature for challenge and timestamp
+ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "C");
 	if ((res = create_signature(r, tv.tv_sec, challenge, sig_b16)) > 0)
 		return res;
+ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "D");
 
 	// Prepare output JSON
 /*
