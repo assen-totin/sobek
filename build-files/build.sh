@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# This script will build Curaden Setup utility
+# This script will build Sobek Nginx module
 # Requires build-common.sh
 
 # Declare job-specific command-line options
@@ -12,15 +12,11 @@ CMDL_JOB_NAME+=("--nginx-version")
 CMDL_JOB_FLAG+=(1)
 CMDL_JOB_HELP+=("The version of Nginx to build for")
 
-CMDL_JOB_NAME+=("--rpm-package")
-CMDL_JOB_FLAG+=(1)
-CMDL_JOB_HELP+=("The name of the RPM package to produce")
-
 # Find build-common.sh and source it
 CURR_DIR=`pwd`
 PROJECT_DIR=`dirname $CURR_DIR`
-if [ -e /usr/libexec/curaden/build-server ] ; then
-	BUILD_SERVER_DIR=/usr/libexec/curaden/build-server
+if [ -e /usr/libexec/build-server ] ; then
+	BUILD_SERVER_DIR=/usr/libexec/build-server
 	source $BUILD_SERVER_DIR/build-server/build-common.sh
 else
 	echo "ERROR: Unable to find build-common.sh"
@@ -33,7 +29,6 @@ build_common $@
 # Package-specific constants
 RPM_PACKAGE="nginx-sobek"
 [ x$ARG_RPM_PACKAGE != 'x' ] && RPM_PACKAGE=$ARG_RPM_PACKAGE
-NEXUS_SLEEP=30
 
 # Check out proper version
 git_checkout
