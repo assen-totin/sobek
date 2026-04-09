@@ -5,7 +5,6 @@
  */
 
 #include "common.h"
-#include "globals.h"
 
 // We need this here as a declaration only; it is defined in main header file which will resolve it at runtime.
 extern ngx_module_t ngx_http_sobek_module;
@@ -91,19 +90,21 @@ void base16_encode(unsigned char *in, int len, char *out) {
 /**
  * Init instance
  */
-void globals_init(ngx_http_request_t *r) {
+settings_t *get_settings(ngx_http_request_t *r) {
 	ngx_http_sobek_loc_conf_t *sobek_loc_conf;
+	settings_t *settings;
 
-	if (globals->init)
-		return;
+	if ((settings = ngx_pcalloc(r->pool, sizeof(settings_t))) == NULL) {
+		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "POST failed to allocate %l bytes for settings.", sizeof(settings_t));
+		return NULL;
+	}
 
 	// Get config
 	sobek_loc_conf = ngx_http_get_module_loc_conf(r, ngx_http_sobek_module);
 
-	globals->sign_key = from_ngx_str_malloc(r->pool, sobek_loc_conf->sign_key);
-	globals->cookie_name = from_ngx_str_malloc(r->pool, sobek_loc_conf->cookie_name);
-	globals->cookie_ttl = sobek_loc_conf->cookie_ttl;
-	globals->init = true;
+	settings->sign_key = from_ngx_str(r->pool, sobek_loc_conf->sign_key);
+	settings->cookie_name = from_ngx_str(r->pool, sobek_loc_conf->cookie_name);
+	settings->cookie_ttl = sobek_loc_conf->cookie_ttl;
 }
 
 /**
@@ -163,6 +164,11 @@ ngx_int_t create_signature(ngx_http_request_t *r, time_t timestamp, char *challe
 	unsigned char *sig;
 	unsigned int sig_len;
 	const EVP_MD *ossl_alg;
+	settings_t *settings;
+
+	// Get settings
+	if ((settings = get_settings(r)) == NULL)
+		return NGX_HTTP_INTERNAL_SERVER_ERROR;
 
 	// Prepare data to sign (does not have to be a NULL-terminated string, but this way we can log it)
 	if ((to_sign = ngx_pcalloc(r->pool, 2 * CHALLENGE_LENGTH + 12)) == NULL) {
@@ -181,7 +187,7 @@ ngx_int_t create_signature(ngx_http_request_t *r, time_t timestamp, char *challe
 	}
 
 	ossl_alg = EVP_sha256();
-	HMAC(ossl_alg, globals->sign_key, strlen(globals->sign_key), (const unsigned char *)to_sign, strlen(to_sign), sig, &sig_len);
+	HMAC(ossl_alg, settings->sign_key, strlen(settings->sign_key), (const unsigned char *)to_sign, strlen(to_sign), sig, &sig_len);
 
 	// Convert signature to Base-16
 	base16_encode(sig, SIGNATURE_LENGTH, signature);

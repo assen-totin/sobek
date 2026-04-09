@@ -23,9 +23,6 @@ ngx_int_t sobek_handler_get(ngx_http_request_t *r) {
 	ngx_chain_t *out;
 	ngx_int_t ret = NGX_OK;
 
-	// Init globals if this is the first request on current thread
-	globals_init(r);
-
 	ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "GET processing request.");
 
 	// Get current timestamp

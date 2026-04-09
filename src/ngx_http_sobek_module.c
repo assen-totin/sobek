@@ -9,22 +9,11 @@
 #include "http.h"
 #include "utils.h"
 
-//// GLOBALS
-// NB: In Nginx, globals are per-thread
-globals_t *globals;
-
 /**
  * Module initialisation
  */
 ngx_int_t ngx_http_sobek_module_init (ngx_cycle_t *cycle) {
-	// Init the globals
-	if ((globals = malloc(sizeof(globals_t))) == NULL) {
-		ngx_log_error(NGX_LOG_EMERG, cycle->log, 0, "Failed to allocate %l bytes for globals->", sizeof(globals_t));
-		return NGX_ERROR;
-	}
-
-	globals->init = false;
-
+	ngx_log_error(NGX_LOG_INFO, cycle->log, 0, "Sobek module initialised");
 	return NGX_OK;
 }
 
@@ -32,12 +21,7 @@ ngx_int_t ngx_http_sobek_module_init (ngx_cycle_t *cycle) {
  * Module termination
  */
 void ngx_http_sobek_module_end(ngx_cycle_t *cycle) {
-	if (globals->sign_key)
-		free(globals->sign_key);
-	if (globals->cookie_name)
-		free(globals->cookie_name);
-
-	free(globals);
+	ngx_log_error(NGX_LOG_INFO, cycle->log, 0, "Sobek module ended");
 }
 
 /**

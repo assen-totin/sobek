@@ -5,7 +5,6 @@
  */
 
 #include "common.h"
-#include "globals.h"
 #include "utils.h"
 
 /**
@@ -33,11 +32,13 @@ void sobek_handler_post (ngx_http_request_t *r) {
 	ngx_buf_t *buf = NULL;
 
 	struct timeval tv;
-	struct tm gmt;
 	const EVP_MD *ossl_alg;
 
-	// Init globals if this is the first request on current thread
-	globals_init(r);
+	settings_t *settings;
+
+	// Get settings
+	if ((settings = get_settings(r)) == NULL)
+		return ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
 
 	// Check if we have body
 	if (r->request_body == NULL)
@@ -212,7 +213,7 @@ void sobek_handler_post (ngx_http_request_t *r) {
 		return ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
 	}
 
-	exp = tv.tv_sec + globals->cookie_ttl;
+	exp = tv.tv_sec + settings->cookie_ttl;
 	sprintf(pld, "{\"exp\":%li}", exp);
 
 	if ((pld_b16 = ngx_pcalloc(r->pool, 2 * pld_len + 1)) == NULL) {
@@ -230,7 +231,7 @@ void sobek_handler_post (ngx_http_request_t *r) {
 	}
 
 	ossl_alg = EVP_sha256();
-	HMAC(ossl_alg, globals->sign_key, strlen(globals->sign_key), (const unsigned char *)pld, strlen(pld), sig, &sig_len);
+	HMAC(ossl_alg, settings->sign_key, strlen(settings->sign_key), (const unsigned char *)pld, strlen(pld), sig, &sig_len);
 
 	// Convert signature to Base-16
 	if ((sig_b16 = ngx_pcalloc(r->pool, 2 * SIGNATURE_LENGTH + 1)) == NULL) {
@@ -242,18 +243,14 @@ void sobek_handler_post (ngx_http_request_t *r) {
 	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "Cookie HMAC: %s", sig_b16);
 
 	// Prepare cookie string
-	//sobek=123@456...; expires=Thu, 18 Dec 2013 12:00:00 UTC; path=/
-	cookie_len = strlen(globals->cookie_name) + 1 + strlen(pld_b16) + 1 + strlen(sig_b16) + 47 + 1;
+	//sobek=123@456...; max-age=1234567890; path=/
+	cookie_len = strlen(settings->cookie_name) + 1 + strlen(pld_b16) + 1 + strlen(sig_b16) + 28 + 1;
 	if ((cookie = ngx_pcalloc(r->pool, cookie_len)) == NULL) {
 		ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "Failed to allocate %l bytes for cookie", cookie_len);
 		return ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
 	}
 
-	sprintf(cookie, "%s=%s@%s", globals->cookie_name, pld_b16, sig_b16);
-
-	// Add expiration time from "exp"
-	gmtime_r(&exp, &gmt);
-	strftime(cookie + strlen(cookie), 47, "; expires=%a, %d %b %Y %H:%M:%S UTC; path=/", &gmt);
+	sprintf(cookie, "%s=%s@%s; max-age=%li; path=/", settings->cookie_name, pld_b16, sig_b16, exp);
 
 	// Prepare output chain
 	out = ngx_alloc_chain_link(r->pool);

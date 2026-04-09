@@ -69,16 +69,12 @@ typedef struct {
 	time_t cookie_ttl;
 } ngx_http_sobek_loc_conf_t;
 
-// Globals
+// Runtime settings
 typedef struct {
-	bool init;
 	char *sign_key;
 	char *cookie_name;
 	time_t cookie_ttl;
-} globals_t;
+} settings_t;
 
 //// ENUMERATORS
-
-//// GLOBALS
-//extern globals_t *globals;
 
