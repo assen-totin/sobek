@@ -34,19 +34,15 @@ For a number of reasons:
 
 The workflow is as follows:
 
-- -> A web client opens www.example.com and reaches the HAProxy in front of it.
-- ∴ HAProxy checks the presence of the Sobek cookie. If it exists, the request is forwarded to the appropriate backend for www.example.com 
-- ∴ If the Sobek cookie is missing, HAProxy forwards the request to the Sobek backend (the Nginx module) instead
-- <- The Sobek backend responds with some simple JavaScript code. It may, optionally, include a "Please wait" (or “Verifying you are not a robot”) page, or just keep the page blank while the challenge is being processed by the web client
-- -> The web client runs the JavaScript code, which makes an AJAX GET request to /sobek on the same domain to fetch a challenge; HAProxy ensures requests to /sobek are always routed to the Sobek Nginx module
-- ∴ Sobek backend generates a challenge, adds the current timestamp and signes them with its key.
-- <- Sobek backend sends the challenge to the web client
-- ∴ The web client solves the challenge
-- -> The web client makes a POST AJAX request to /sobek to submit the solution together with the challenge, its timestamp and signature
-- ∴ The Sobek backend verifies that the challenge is not too old, that its signature is correct and that the challenge has been properly solved
-- <- The Sobek backend returns its cookie (valid for certain amount of time) to the web client
-- ∴ The JavaScript code on the web client sets the Sobek cookie for the domain it was loaded from
-- ∴ The JavaScript code on the web client reloads the page; the request now includes Sobek cookie and gets routed by HAProxy to the proper backend.
+- A web client opens www.example.com and reaches the HAProxy in front of it.
+- HAProxy checks the presence of the Sobek cookie. If it exists, the request is forwarded to the appropriate backend for www.example.com 
+- If the Sobek cookie is missing, HAProxy forwards the request to the Sobek backend (the Nginx module) instead
+- The Sobek backend responds with some simple JavaScript code. It may, optionally, include a "Please wait" (or "Verifying you are not a robot") page, or just keep the page blank while the challenge is being processed by the web client
+- The web client runs the JavaScript code, which makes an AJAX GET request to /sobek on the same domain to fetch a challenge; HAProxy ensures requests to /sobek are always routed to the Sobek Nginx module
+- Sobek backend generates a challenge, adds the current timestamp and signes them with its key, then sends this data back to the web client
+- The web client solves the challenge, then makes a POST AJAX request to /sobek to submit the solution together with the original challenge, its timestamp and signature
+- The Sobek backend verifies that the challenge is not too old, that its signature is correct and that the challenge has been properly solved; if so, it returns its cookie (valid for certain amount of time) to the web client
+- The JavaScript code on the web client sets the Sobek cookie for the domain it was loaded from and reloads the location (which still holds the original destination); the request now includes the Sobek cookie and gets routed by HAProxy to the proper backend.
 
 ## THE CHALLENGE
 
@@ -58,16 +54,12 @@ The challenge is composed with such requirements so that solving it is an indire
 
 The challenge composition is as follows:
 
-- The challenge is composed from random data (at least 64 bytes); it is transmitted to the web client in a hex-encoded form.
-- The current timestamp is also sent to the web client. It is later used to verify that the challenge and its response have not been passed to another web client.
-- The challenge and the timestamp together are digitally signed using a key, only known to the backend server.
-- The web client computes the SHA-256 hash from the challenge, starting with a zero nonce as a salt. It checks if the first N bits of the hash (as defined in the challenge) are all zeroes; if not, the nonce is incremented by one and the computation is repeated (which, on average, will require 2^N/2 computations). Modern client hardware should be able to produce 10-100 K hashes per second, so the complexity of the challenge should be set to a value that will not take more than a second or so to solve.
-- When ready, the web client submits the last nonce it used as a solution, together with the original challenge, timestamp and signature.
-- The backend verifies that the signature matches the challenge and the timestamp. 
-- The backend verifies that the timestamp is not older than some small amount of time, like 1 minute. 
-- The verification backend computes the hash from the challenge with the solution it has received as a salt and verifies that its first N bits are indeed zeroes. 
+- The challenge is composed by Sobek backend from random data (at least 64 bytes, since the client will need to compute its 256-bit hash as a solution) and send to the web client.
+- The web client computes the SHA-256 hash from the challenge, starting with a zero as a salt. It checks if the first N bits of the hash (as defined in the challenge) are all zeroes; if not, the salt is incremented by one and the computation is repeated (which, on average, will require 2^N/2 computations). Modern client hardware should be able to produce 10-100 K hashes per second, so the complexity of the challenge should be set to a value that will not take more than a second or so to solve.
+- When ready, the web client submits the last salt it used as a solution, together with the original challenge.
+- The Sobek backend computes the hash from the challenge with the solution it has received as a salt and verifies that its first N bits are indeed zeroes. The original challenge, timestamp and signature ensure that the challenge cannot be tampered with or, once solved, passed to other web clients.
 
-With this workflow, the verification backend only needs to compute two digital signatures and one hash per challenge, which makes the load on it negligible.
+Thus, the Sobek backend only needs to compute two digital signatures and one hash per challenge, which makes the load on it negligible.
 
 ## THE SOBEK COOKIE
 
@@ -82,7 +74,15 @@ The cookie is digitally signed by the Sobek backend. In order to ensure that the
 
 HAProxy cannot onitsown process the cookie in the described way, but it has a Lua interpreter built-in that can easily achieve this.
 
-## FURTHER HAPROXY CONSIDERATIONS
+## FURTHER CONSIDERATIONS
+
+### Solution Complexity
+
+It may well be seen that the challenge complexity is not really vital to the outcome; since we need binary output ("able to solve it" or "not able to do so"), it does not really matter how many bits of certan value (zeroes, in our case) the client should seek (at the beginning of the hash, in our case); therefore, in order so make this less obtrusive to web slower clients, requesting one zero byte instead of two would shrink the average number of expected hash computations by the web client from 32,768 to just 128.
+
+When chosing this complexity of the solution required, it should also be well undestood that 2^N/2 is the statistic _average_ number of runs to find it; while the client might be extremely lucky and find it on the very first run, it might also be extremely unlucky and run for much longer than the average; the theoretical upper limit for a 256-bit hash would be in the order of 2^256 runs; however, such prolonged runs are quite rare.
+
+### HAProxy
 
 Some well-known URL should likely be exempted from the check for the Sobek cookie in HAProxy, like:
 
