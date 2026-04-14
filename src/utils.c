@@ -79,8 +79,11 @@ char *from_ngx_str_malloc(ngx_pool_t *pool, ngx_str_t ngx_str) {
  */
 void base16_encode(unsigned char *in, int len, char *out) {
 	int i;
-	for (i=0; i < len; i++)
-		sprintf(out + 2 * i, "%c%c", HEX[in[i] >> 4], HEX[in[i] & 0x0F]);
+
+	for (i=0; i < len; i++) {
+		out[i * 2]   = HEX[in[i] >> 4];
+		out[i * 2 + 1] = HEX[in[i] & 0x0F];
+	}
 }
 
 /**
