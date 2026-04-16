@@ -12,6 +12,10 @@ CMDL_JOB_NAME+=("--nginx-version")
 CMDL_JOB_FLAG+=(1)
 CMDL_JOB_HELP+=("The version of Nginx to build for")
 
+CMDL_JOB_NAME+=("--rpm-package")
+CMDL_JOB_FLAG+=(1)
+CMDL_JOB_HELP+=("The name of the RPM package to produce")
+
 # Find build-common.sh and source it
 CURR_DIR=`pwd`
 PROJECT_DIR=`dirname $CURR_DIR`
